@@ -14,7 +14,7 @@ import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentEditorBinding
 import jp.co.seesaa.geckour.picrossmaker.fragment.adapter.EditorFragmentItemAdapter
-import java.util.*
+import jp.co.seesaa.geckour.picrossmaker.model.Cell
 
 class EditorFragment(listener: IListener): RxFragment() {
     var listener: IListener? = null
@@ -68,15 +68,23 @@ class EditorFragment(listener: IListener): RxFragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        binding?.recyclerView?.layoutManager = GridLayoutManager(activity, size?.width ?: 0)
-        adapter = EditorFragmentItemAdapter(size ?: Size(0, 0))
+        binding?.recyclerView?.layoutManager = GridLayoutManager(activity, (size?.width ?: 0) + getNumBlankArea())
+
+        adapter = EditorFragmentItemAdapter(size ?: Size(0, 0), getNumBlankArea())
         binding?.recyclerView?.adapter = adapter
         onRefresh()
     }
 
+    fun getNumBlankArea(): Int {
+        if (size == null) return 0
+        if (size?.width ?: 0 > 3 || size?.height ?: 0 > 3) return 3
+        return if (size?.width ?: 0 < size?.height ?: 0) size?.height ?: 0 else size?.width ?: 0
+    }
+
     fun onRefresh() {
         adapter?.clear()
-        val size = (size?.width ?: 0) * (size?.height ?: 0)
-        for (i in 0..size - 1) adapter?.add(false)
+        val numBlankArea = getNumBlankArea()
+        val size = ((this.size?.width ?: 0) + numBlankArea) * ((this.size?.height ?: 0) + numBlankArea)
+        for (i in 0..size - 1) adapter?.add(Cell())
     }
 }

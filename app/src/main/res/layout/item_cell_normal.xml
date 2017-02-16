@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@android:color/darker_gray"
+        android:padding="0.5sp">
+
+        <FrameLayout
+            android:layout_width="12sp"
+            android:layout_height="12sp"
+            android:id="@+id/cell"
+            android:background="@android:color/white">
+        </FrameLayout>
+    </FrameLayout>
+</layout>

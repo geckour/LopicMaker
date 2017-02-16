@@ -12,7 +12,7 @@
             android:layout_height="wrap_content"
             android:padding="0.5sp"
             android:background="@android:color/darker_gray"
-            tools:listitem="@layout/item_cell"
+            tools:listitem="@layout/item_cell_normal"
             android:id="@+id/recyclerView" />
     </RelativeLayout>
 </layout>

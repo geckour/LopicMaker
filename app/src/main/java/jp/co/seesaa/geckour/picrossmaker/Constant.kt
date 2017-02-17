@@ -8,5 +8,6 @@ class Constant {
         const val ARGS_FRAGMENT_CANVAS_SIZE: String = "argsFragmentCanvasSize"
         const val ARGS_ACTIVITY_CANVAS_WIDTH: String = "argsActivityCanvasWidth"
         const val ARGS_ACTIVITY_CANVAS_HEIGHT: String = "argsActivityCanvasHeight"
+        const val unit: Int = 50
     }
 }

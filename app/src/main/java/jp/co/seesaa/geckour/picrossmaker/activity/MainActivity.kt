@@ -12,8 +12,6 @@ import android.support.v7.widget.Toolbar
 import android.util.Size
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View.GONE
-import android.view.View.VISIBLE
 import com.trello.rxlifecycle2.components.support.RxAppCompatActivity
 import jp.co.seesaa.geckour.picrossmaker.fragment.MainFragment
 import jp.co.seesaa.geckour.picrossmaker.R
@@ -46,27 +44,32 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
                 val fragment = MyAlertDialogFragment.Builder(object : MyAlertDialogFragment.IListener {
                     override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: Int, resultCode: Int, result: Any?) {
                         when (resultCode) {
-                            DialogInterface.BUTTON_POSITIVE -> when (requestCode) {
-                                MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE -> {
-                                    if (result != null && result is Size) {
-                                        val fragment = EditorFragment.newInstance(result, object: EditorFragment.IListener {
-                                            override fun onCanvasSizeError(size: Size) {
-                                                Snackbar
-                                                        .make(findViewById(R.id.container), R.string.error_editor_fragment_invalid_size, Snackbar.LENGTH_SHORT)
-                                                        .show()
-                                            }
-                                        })
-                                        if (fragment != null) {
-                                            fragmentManager.beginTransaction()
-                                                    .replace(R.id.container, fragment)
-                                                    .addToBackStack(null)
-                                                    .commit()
+                            DialogInterface.BUTTON_POSITIVE ->
+                                onPositive(requestCode, result)
+                        }
+                        dialogInterface.dismiss()
+                    }
+
+                    fun onPositive(requestCode: Int, result: Any?) {
+                        when (requestCode) {
+                            MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE -> {
+                                if (result != null && result is Size) {
+                                    val fragment = EditorFragment.newInstance(result, object : EditorFragment.IListener {
+                                        override fun onCanvasSizeError(size: Size) {
+                                            Snackbar
+                                                    .make(findViewById(R.id.container), R.string.error_editor_fragment_invalid_size, Snackbar.LENGTH_SHORT)
+                                                    .show()
                                         }
+                                    })
+                                    if (fragment != null) {
+                                        fragmentManager.beginTransaction()
+                                                .replace(R.id.container, fragment)
+                                                .addToBackStack(null)
+                                                .commit()
                                     }
                                 }
                             }
                         }
-                        dialogInterface.dismiss()
                     }
                 }, this)
                         .setTitle(getString(R.string.dialog_alert_title_size_define))

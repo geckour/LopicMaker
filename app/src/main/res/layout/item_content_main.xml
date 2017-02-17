@@ -31,7 +31,7 @@
             android:text="15 x 10"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/size"
+            android:id="@+id/point"
             android:textSize="12sp"
             android:layout_below="@+id/title" />
     </RelativeLayout>

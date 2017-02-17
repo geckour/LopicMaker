@@ -9,7 +9,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.TextView
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.DialogDefineSizeBinding
 import timber.log.Timber
@@ -139,8 +138,8 @@ class MyAlertDialogFragment(val listener: IListener) : DialogFragment() {
         var width: Int
         var height: Int
         try {
-            width = (dialog.findViewById(R.id.edit_text_size_width) as EditText).text.toString().toInt() // FIXME: 何故かDataBindingではtextが取得できない
-            height = (dialog.findViewById(R.id.edit_text_size_height) as EditText).text.toString().toInt() // FIXME: 何故かDataBindingではtextが取得できない
+            width = (dialog.findViewById(R.id.edit_text_size_width) as EditText).text.toString().toInt()
+            height = (dialog.findViewById(R.id.edit_text_size_height) as EditText).text.toString().toInt()
         } catch (e: NumberFormatException) {
             width = 0
             height = 0

@@ -135,9 +135,9 @@ class Algorithm {
 
             paint.style = Paint.Style.FILL
             paint.color = if (cell.state) Color.BLACK else Color.WHITE
-            val startX = (numBlank + cell.coordinate.x) * unit.toFloat()
-            val startY = (numBlank + cell.coordinate.y) * unit.toFloat()
-            val rect = RectF(startX, startY, startX + unit.toFloat(), startY + unit.toFloat())
+            val startX = (numBlank + cell.coordinate.x) * unit.toFloat() + 1f
+            val startY = (numBlank + cell.coordinate.y) * unit.toFloat() + 1f
+            val rect = RectF(startX, startY, startX + unit.toFloat() - 2f, startY + unit.toFloat() - 2f)
             Log.d("onEditCanvasImage", "rect: $rect")
             path.addRect(rect, Path.Direction.CW)
             canvas.drawPath(path, paint)

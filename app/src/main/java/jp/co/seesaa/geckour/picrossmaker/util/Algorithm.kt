@@ -161,10 +161,8 @@ class Algorithm {
             paint.textSize = unit.toFloat()
 
             val bounds: Rect = Rect()
-            paint.getTextBounds("0", 0, "0".length, bounds)
-
             val textBaseHeight = (sizeBlankArea.y + cell.coordinate.y + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
-            val initialWidth = (sizeBlankArea.x - hintsRow.size + 0.5f) * unit - bounds.exactCenterX()
+            val initialWidth = (sizeBlankArea.x - hintsRow.size + 0.5f) * unit
             paint.color = Color.WHITE
             for (i in 0..sizeBlankArea.x - 1) {
                 val path = Path()
@@ -176,10 +174,11 @@ class Algorithm {
             }
             paint.color = Color.BLACK
             for ((index, value) in hintsRow.withIndex()) {
-                canvas.drawText(value.toString(), initialWidth + index * unit, textBaseHeight, paint)
+                paint.getTextBounds(value.toString(), 0, value.toString().length, bounds)
+                canvas.drawText(value.toString(), initialWidth - bounds.exactCenterX() + index * unit, textBaseHeight, paint)
             }
 
-            val textBaseWidth = (sizeBlankArea.x + cell.coordinate.x + 0.5f) * unit - bounds.exactCenterX()
+            val textBaseWidth = (sizeBlankArea.x + cell.coordinate.x + 0.5f) * unit
             val initialHeight = (sizeBlankArea.y - hintsColumn.size + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
             paint.color = Color.WHITE
             for (i in 0..sizeBlankArea.y - 1) {
@@ -192,7 +191,8 @@ class Algorithm {
             }
             paint.color = Color.BLACK
             for ((index, value) in hintsColumn.withIndex()) {
-                canvas.drawText(value.toString(), textBaseWidth, initialHeight + index * unit, paint)
+                paint.getTextBounds(value.toString(), 0, value.toString().length, bounds)
+                canvas.drawText(value.toString(), textBaseWidth - bounds.exactCenterX(), initialHeight + index * unit, paint)
             }
 
             return bitmap

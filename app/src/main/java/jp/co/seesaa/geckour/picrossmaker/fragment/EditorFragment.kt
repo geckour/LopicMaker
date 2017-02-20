@@ -153,7 +153,7 @@ class EditorFragment(listener: IListener): RxFragment() {
                         cell.state = !cell.state
                     }
 
-                    val bitmap = Algorithm.onEditCanvasImage((binding?.canvas?.drawable as BitmapDrawable).bitmap, size ?: Size(0, 0), cells, cell)
+                    val bitmap = Algorithm.onEditCanvasImage((binding?.canvas?.drawable as BitmapDrawable).bitmap, size ?: Size(0, 0), cells, cell, true)
                     binding?.canvas?.setImageBitmap(bitmap)
                 }
                 pointPrev0.set(pointCurrent)
@@ -168,6 +168,8 @@ class EditorFragment(listener: IListener): RxFragment() {
     }
 
     fun onRefresh() {
-        binding?.canvas?.setImageBitmap(Algorithm.createCanvasImage(binding?.canvas, size ?: Size(0, 0)))
+        val numBlank = Algorithm.getNumBlankArea(size)
+        Algorithm.sizeBlankArea.set(numBlank, numBlank)
+        binding?.canvas?.setImageBitmap(Algorithm.createCanvasImage(size ?: Size(0, 0)))
     }
 }

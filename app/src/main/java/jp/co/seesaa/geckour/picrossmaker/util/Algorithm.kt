@@ -3,7 +3,6 @@ package jp.co.seesaa.geckour.picrossmaker.util
 import android.graphics.*
 import android.util.Log
 import android.util.Size
-import android.util.SizeF
 import android.widget.ImageView
 import jp.co.seesaa.geckour.picrossmaker.Constant.Companion.unit
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
@@ -11,6 +10,7 @@ import java.util.*
 
 class Algorithm {
     companion object {
+        val sizeBlankArea = Point(0, 0)
         fun getNumBlankArea(size: Size?): Int {
             if (size == null) return 0
             if (size.width > 3 || size.height > 3) return 3
@@ -32,26 +32,22 @@ class Algorithm {
         fun getCoordinate(canvas: ImageView?, pointer: PointF, size: Size): Point? {
             if (canvas == null || size.width < 1 || size.height < 1) return null
 
-            val numBlankArea = getNumBlankArea(size)
 
-            val unitX = canvas.width.toFloat() / (size.width + numBlankArea)
-            val unitY = canvas.height.toFloat() / (size.height + numBlankArea)
+            val unitX = canvas.width.toFloat() / (size.width + sizeBlankArea.x)
+            val unitY = canvas.height.toFloat() / (size.height + sizeBlankArea.y)
             //if (Math.abs(unitX - unitY) > 0.1f) return null
 
-            val cellX = (pointer.x / unitX).toInt() - numBlankArea
-            val cellY = (pointer.y / unitY).toInt() - numBlankArea
+            val cellX = (pointer.x / unitX).toInt() - sizeBlankArea.x
+            val cellY = (pointer.y / unitY).toInt() - sizeBlankArea.y
             if (cellX < 0 || size.width < cellX || cellY < 0 || size.height < cellY) return null
 
             return Point(cellX, cellY)
         }
 
-        fun createCanvasImage(canvas: ImageView?, size: Size): Bitmap? {
-            if (canvas == null || size.width < 1 || size.height < 1) return null
+        fun createCanvasImage(size: Size): Bitmap? {
+            if (size.width < 1 || size.height < 1) return null
 
-            val numBlankArea = getNumBlankArea(size)
-            Log.d("createCanvasImage", "numBlankArea: $numBlankArea")
-
-            val bitmap = Bitmap.createBitmap(unit * (numBlankArea + size.width), unit * (numBlankArea + size.height), Bitmap.Config.ARGB_8888)
+            val bitmap = Bitmap.createBitmap(unit * (sizeBlankArea.x + size.width), unit * (sizeBlankArea.y + size.height), Bitmap.Config.ARGB_8888)
             val c = Canvas(bitmap)
             val p = Paint()
             p.isAntiAlias = true
@@ -65,11 +61,11 @@ class Algorithm {
             p.color = lineColor
             p.style = Paint.Style.STROKE
             p.strokeWidth = 1f
-            for (i in 1..(numBlankArea + size.height) - 1) {
+            for (i in 1..(sizeBlankArea.y + size.height) - 1) {
                 path = Path()
-                if (i == numBlankArea) p.color = Color.BLACK
+                if (i == sizeBlankArea.y) p.color = Color.BLACK
 
-                val height = c.height.toFloat() * i / (numBlankArea + size.height)
+                val height = c.height.toFloat() * i / (sizeBlankArea.y + size.height)
                 path.moveTo(0f, height)
                 path.lineTo(c.width.toFloat(), height)
                 path.close()
@@ -78,11 +74,11 @@ class Algorithm {
 
                 p.color = lineColor
             }
-            for (i in 1..(numBlankArea + size.width) - 1) {
+            for (i in 1..(sizeBlankArea.x + size.width) - 1) {
                 path = Path()
-                if (i == numBlankArea) p.color = Color.BLACK
+                if (i == sizeBlankArea.x) p.color = Color.BLACK
 
-                val width = c.width.toFloat() * i / (numBlankArea + size.width)
+                val width = c.width.toFloat() * i / (sizeBlankArea.x + size.width)
                 path.moveTo(width, 0f)
                 path.lineTo(width, c.height.toFloat())
                 path.close()
@@ -92,73 +88,88 @@ class Algorithm {
                 p.color = lineColor
             }
 
-            val blankWidth = numBlankArea * unit.toFloat()
+            val blankWidth = sizeBlankArea.x * unit.toFloat()
+            val blankHeight = sizeBlankArea.y * unit.toFloat()
 
             p.style = Paint.Style.FILL
             p.color = Color.argb(255, 96, 96, 96)
             path = Path()
-            path.addRect(0f, 0f, blankWidth, blankWidth, Path.Direction.CW)
+            path.addRect(0f, 0f, blankWidth, blankHeight, Path.Direction.CW)
             c.drawPath(path, p)
 
             p.color = Color.BLACK
             p.textSize = unit.toFloat()
             val bounds: Rect = Rect()
             p.getTextBounds("0", 0, "0".length, bounds)
-            val textBaseHeight = blankWidth - unit / 2 - ((p.descent() + p.ascent()) / 2)
+            val textBaseHeight = blankHeight - unit / 2 - ((p.descent() + p.ascent()) / 2)
             for (i in 0..size.width - 1) {
                 c.drawText("0", blankWidth + (i + 0.5f) * unit - bounds.exactCenterX(), textBaseHeight, p)
             }
             val textBaseWidth = blankWidth - 0.5f * unit - bounds.exactCenterX()
             for (i in 1..size.height) {
-                c.drawText("0", textBaseWidth, blankWidth + (i - 0.5f) * unit - ((p.descent() + p.ascent()) / 2), p)
+                c.drawText("0", textBaseWidth, blankHeight + (i - 0.5f) * unit - ((p.descent() + p.ascent()) / 2), p)
             }
 
             return bitmap
         }
 
-        fun onEditCanvasImage(image: Bitmap?, size: Size, cells: List<Cell>, cell: Cell): Bitmap? {
+        fun onEditCanvasImage(image: Bitmap?, size: Size, cells: List<Cell>, cell: Cell, refreshHints: Boolean): Bitmap? {
             if (image == null || size.width < 1 || size.height < 1) return null
 
             val canvas = Canvas(image)
             val paint = Paint()
             val path = Path()
-            val numBlank = getNumBlankArea(size)
 
             paint.style = Paint.Style.FILL
             paint.color = if (cell.state) Color.BLACK else Color.WHITE
-            val left = (numBlank + cell.coordinate.x) * unit.toFloat() + 1f
-            val top = (numBlank + cell.coordinate.y) * unit.toFloat() + 1f
+            val left = (sizeBlankArea.x + cell.coordinate.x) * unit.toFloat() + 1f
+            val top = (sizeBlankArea.y + cell.coordinate.y) * unit.toFloat() + 1f
             val rect = RectF(left, top, left + unit.toFloat() - 2f, top + unit.toFloat() - 2f)
             path.addRect(rect, Path.Direction.CW)
             canvas.drawPath(path, paint)
 
-            refreshHints(canvas, size, cells, cell)
+            return if (refreshHints) refreshHints(image, size, cells, cell) else image
+        }
+
+        fun refreshCanvasSize(image: Bitmap, drawAreaSize: Size, hintsLengths: Size, cells: List<Cell>): Bitmap {
+            if (hintsLengths.width > sizeBlankArea.x || hintsLengths.height > sizeBlankArea.y) {
+
+                sizeBlankArea.set(if (hintsLengths.width > sizeBlankArea.x) hintsLengths.width else sizeBlankArea.x,
+                        if (hintsLengths.height > sizeBlankArea.y) hintsLengths.height else sizeBlankArea.y)
+                var bitmap = createCanvasImage(drawAreaSize) ?: return image
+
+                for (cell in cells) bitmap = onEditCanvasImage(bitmap, drawAreaSize, cells, cell, false) ?: return image
+
+                return bitmap
+            }
 
             return image
         }
 
-        fun refreshHints(canvas: Canvas, size: Size, cells: List<Cell>, cell: Cell): Canvas {
-            val row = getCellsInRow(cells, cell.coordinate.y, size) ?: return canvas
-            val column = getCellsInColumn(cells, cell.coordinate.x, size) ?: return canvas
+        fun refreshHints(image: Bitmap, size: Size, cells: List<Cell>, cell: Cell): Bitmap {
+            val row = getCellsInRow(cells, cell.coordinate.y, size) ?: return image
+            val column = getCellsInColumn(cells, cell.coordinate.x, size) ?: return image
             val hintsRow = getHints(row)
             val hintsColumn = getHints(column)
+
+            val bitmap = refreshCanvasSize(image, size, Size(hintsRow.size, hintsColumn.size), cells)
+            val canvas = Canvas(bitmap)
 
             val paint = Paint()
             paint.isAntiAlias = true
             paint.style = Paint.Style.FILL
             paint.textSize = unit.toFloat()
 
-            val numBlank = getNumBlankArea(size)
             val bounds: Rect = Rect()
             paint.getTextBounds("0", 0, "0".length, bounds)
 
-            val textBaseHeight = (numBlank + cell.coordinate.y + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
-            val initialWidth = (numBlank - hintsRow.size + 0.5f) * unit - bounds.exactCenterX()
+            val textBaseHeight = (sizeBlankArea.y + cell.coordinate.y + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
+            val initialWidth = (sizeBlankArea.x - hintsRow.size + 0.5f) * unit - bounds.exactCenterX()
             paint.color = Color.WHITE
-            for (i in 0..numBlank - 1) {
+            for (i in 0..sizeBlankArea.x - 1) {
                 val path = Path()
                 val left = i * unit + 1f
-                val top = (numBlank + cell.coordinate.y) * unit + 1f
+                val top = (sizeBlankArea.y + cell.coordinate.y) * unit + 1f
                 val rect = RectF(left, top, left + unit - 2f, top + unit - 2f)
                 path.addRect(rect, Path.Direction.CW)
                 canvas.drawPath(path, paint)
@@ -168,12 +179,12 @@ class Algorithm {
                 canvas.drawText(value.toString(), initialWidth + index * unit, textBaseHeight, paint)
             }
 
-            val textBaseWidth = (numBlank + cell.coordinate.x + 0.5f) * unit - bounds.exactCenterX()
-            val initialHeight = (numBlank - hintsColumn.size + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
+            val textBaseWidth = (sizeBlankArea.x + cell.coordinate.x + 0.5f) * unit - bounds.exactCenterX()
+            val initialHeight = (sizeBlankArea.y - hintsColumn.size + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
             paint.color = Color.WHITE
-            for (i in 0..numBlank - 1) {
+            for (i in 0..sizeBlankArea.y - 1) {
                 val path = Path()
-                val left = (numBlank + cell.coordinate.x) * unit + 1f
+                val left = (sizeBlankArea.x + cell.coordinate.x) * unit + 1f
                 val top = i * unit + 1f
                 val rect = RectF(left, top, left + unit - 2f, top + unit - 2f)
                 path.addRect(rect, Path.Direction.CW)
@@ -184,7 +195,7 @@ class Algorithm {
                 canvas.drawText(value.toString(), textBaseWidth, initialHeight + index * unit, paint)
             }
 
-            return canvas
+            return bitmap
         }
 
         fun getHints(cells: List<Cell>): List<Int> {

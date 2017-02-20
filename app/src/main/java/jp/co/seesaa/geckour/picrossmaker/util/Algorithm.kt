@@ -131,7 +131,7 @@ class Algorithm {
             return if (refreshHints) refreshHints(image, size, cells, cell) else image
         }
 
-        fun refreshCanvasSize(image: Bitmap, drawAreaSize: Size, hintsLengths: Size, cells: List<Cell>): Bitmap {
+        fun refreshCanvasSize(image: Bitmap, drawAreaSize: Size, hintsLengths: Size, cells: List<Cell>): Bitmap? {
             if (hintsLengths.width > sizeBlankArea.x || hintsLengths.height > sizeBlankArea.y) {
 
                 sizeBlankArea.set(if (hintsLengths.width > sizeBlankArea.x) hintsLengths.width else sizeBlankArea.x,
@@ -143,7 +143,18 @@ class Algorithm {
                 return bitmap
             }
 
-            return image
+            return null
+        }
+
+        fun refreshAllHints(image: Bitmap, size: Size, cells: List<Cell>): Bitmap {
+            var bitmap = image
+            val end = Math.max(size.width, size.height) - 1
+            for (i in 0..end) {
+                val cell = getCellByCoordinate(cells, Point(i % size.width, i % size.height)) ?: return image
+                bitmap = refreshHints(image, size, cells, cell)
+            }
+
+            return bitmap
         }
 
         fun refreshHints(image: Bitmap, size: Size, cells: List<Cell>, cell: Cell): Bitmap {
@@ -152,7 +163,12 @@ class Algorithm {
             val hintsRow = getHints(row)
             val hintsColumn = getHints(column)
 
-            val bitmap = refreshCanvasSize(image, size, Size(hintsRow.size, hintsColumn.size), cells)
+            var bitmap = refreshCanvasSize(image, size, Size(hintsRow.size, hintsColumn.size), cells)
+            if (bitmap != null) {
+                bitmap = refreshAllHints(bitmap, size, cells)
+            } else {
+                bitmap = image
+            }
             val canvas = Canvas(bitmap)
 
             val paint = Paint()
@@ -240,6 +256,10 @@ class Algorithm {
             }
 
             return cellsInColumn
+        }
+
+        fun isSolvable(cells: List<Cell>): Boolean {
+            return true
         }
     }
 }

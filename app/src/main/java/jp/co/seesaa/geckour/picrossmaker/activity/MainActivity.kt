@@ -37,50 +37,6 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
         val navigationView = findViewById(R.id.nav_view) as NavigationView
         navigationView.setNavigationItemSelectedListener(this)
 
-        val fab = findViewById(R.id.fab) as FloatingActionButton
-        fab.setOnClickListener {
-            view ->
-            run {
-                val fragment = MyAlertDialogFragment.Builder(object : MyAlertDialogFragment.IListener {
-                    override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: Int, resultCode: Int, result: Any?) {
-                        when (resultCode) {
-                            DialogInterface.BUTTON_POSITIVE ->
-                                onPositive(requestCode, result)
-                        }
-                        dialogInterface.dismiss()
-                    }
-
-                    fun onPositive(requestCode: Int, result: Any?) {
-                        when (requestCode) {
-                            MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE -> {
-                                if (result != null && result is Size) {
-                                    val fragment = EditorFragment.newInstance(result, object : EditorFragment.IListener {
-                                        override fun onCanvasSizeError(size: Size) {
-                                            Snackbar
-                                                    .make(findViewById(R.id.container), R.string.error_editor_fragment_invalid_size, Snackbar.LENGTH_SHORT)
-                                                    .show()
-                                        }
-                                    })
-                                    if (fragment != null) {
-                                        fragmentManager.beginTransaction()
-                                                .replace(R.id.container, fragment)
-                                                .addToBackStack(null)
-                                                .commit()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }, this)
-                        .setTitle(getString(R.string.dialog_alert_title_size_define))
-                        .setLayout(R.layout.dialog_define_size)
-                        .setRequestCode(MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE)
-                        .setCancelable(true)
-                        .commit()
-                fragment.show(fragmentManager, MyAlertDialogFragment.Builder.TAG_DEFINE_SIZE)
-            }
-        }
-
         if (savedInstanceState == null) {
             val fragment = MainFragment.newInstance()
             fragmentManager.beginTransaction().replace(R.id.container, fragment).commit()

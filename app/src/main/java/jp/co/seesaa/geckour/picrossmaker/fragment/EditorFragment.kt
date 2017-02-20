@@ -49,6 +49,8 @@ class EditorFragment(listener: IListener): RxFragment() {
         }
 
         val TAG = "editorFragment"
+        const val MODE_EDIT: Boolean = true
+        const val MODE_ZOOM: Boolean = false
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,8 +66,6 @@ class EditorFragment(listener: IListener): RxFragment() {
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val fab = activity.findViewById(R.id.fab) as FloatingActionButton
-        fab.visibility = View.GONE
 
         (activity as MainActivity).supportActionBar?.setTitle(R.string.action_bar_title_edit)
 
@@ -75,40 +75,37 @@ class EditorFragment(listener: IListener): RxFragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        binding?.canvas?.setOnTouchListener { view, event ->
+        val fab = activity.findViewById(R.id.fab) as FloatingActionButton
+        fab.tag = true
+        fab.setImageResource(R.drawable.ic_crop_free_white_24px)
+        fab.setOnClickListener {
+            view ->
             run {
-                return@run when (event.action) {
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
-                        pointPrev0.set(-1f, -1f)
-                        pointPrev1.set(-1f, -1f)
-                        if (event.pointerCount > 1) {
-                            false
-                        } else onTouchCanvas(event)
-                    }
-
-                    else ->
-                        if (event.pointerCount > 1) {
-                            false
-                        } else onTouchCanvas(event)
-                }
+                val mode = view.tag as Boolean
+                (view as FloatingActionButton).setImageResource(if (mode) R.drawable.ic_edit_white_24px else R.drawable.ic_crop_free_white_24px)
+                view.tag = !mode
             }
         }
-        binding?.root?.setOnTouchListener { view, event ->
-            run {
-                return@run when (event.action) {
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
-                        pointPrev0.set(-1f, -1f)
-                        pointPrev1.set(-1f, -1f)
-                        false
-                    }
 
-                    else ->
-                        if (event.pointerCount > 1) {
-                            val p0 = PointF(event.getX(0), event.getY(0))
-                            val p1 = PointF(event.getX(1), event.getY(1))
-                            onScale(p0, p1)
-                        } else true
-                }
+        binding?.canvas?.setOnTouchListener { view, event -> onTouchCanvas(event) }
+        binding?.cover?.setOnTouchListener { view, event ->
+            run {
+                return@run if (!getMode()) {
+                    when (event.action) {
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                            pointPrev0.set(-1f, -1f)
+                            pointPrev1.set(-1f, -1f)
+                            true
+                        }
+
+                        else ->
+                            if (event.pointerCount > 1) {
+                                val p0 = PointF(event.getX(0), event.getY(0))
+                                val p1 = PointF(event.getX(1), event.getY(1))
+                                onScale(p0, p1)
+                            } else true
+                    }
+                } else false
             }
         }
     }
@@ -130,19 +127,45 @@ class EditorFragment(listener: IListener): RxFragment() {
     }
 
     fun onTouchCanvas(event: MotionEvent): Boolean {
-        if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_POINTER_UP) {
-            val coordinate = Algorithm.getCoordinate(
-                    binding?.canvas,
-                    PointF(event.x, event.y),
-                    size ?: Size(0, 0)) ?: return false
-            val cell = Algorithm.getCellByCoordinate(cells, coordinate) ?: return false
-            cell.state = !cell.state
+        when (event.action) {
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                pointPrev0.set(-1f, -1f)
+                pointPrev1.set(-1f, -1f)
+            }
 
-            val bitmap = Algorithm.onEditCanvasImage((binding?.canvas?.drawable as BitmapDrawable).bitmap, size ?: Size(0, 0), cell)
-            binding?.canvas?.setImageBitmap(bitmap)
+            else -> {
+                val pointCurrent = PointF(event.x, event.y)
+                val coordCurrent = Algorithm.getCoordinate(
+                        binding?.canvas,
+                        pointCurrent,
+                        size ?: Size(0, 0)) ?: return true
+                val coordPrev = Algorithm.getCoordinate(
+                        binding?.canvas,
+                        pointPrev0,
+                        size ?: Size(0, 0)) ?: Point(-1, -1)
+                if (!coordCurrent.equals(coordPrev.x, coordPrev.y)) {
+                    val cell = Algorithm.getCellByCoordinate(cells, coordCurrent) ?: return true
+
+                    if (event.action == MotionEvent.ACTION_MOVE) {
+                        // TODO coordPrevのcell.state取得、分岐
+                        val cellPrev = Algorithm.getCellByCoordinate(cells, coordPrev) ?: return true
+                        cell.state = cellPrev.state
+                    } else {
+                        cell.state = !cell.state
+                    }
+
+                    val bitmap = Algorithm.onEditCanvasImage((binding?.canvas?.drawable as BitmapDrawable).bitmap, size ?: Size(0, 0), cell)
+                    binding?.canvas?.setImageBitmap(bitmap)
+                }
+                pointPrev0.set(pointCurrent)
+            }
         }
 
         return true
+    }
+
+    fun getMode(): Boolean {
+        return (activity.findViewById(R.id.fab) as FloatingActionButton).tag as Boolean
     }
 
     fun onRefresh() {

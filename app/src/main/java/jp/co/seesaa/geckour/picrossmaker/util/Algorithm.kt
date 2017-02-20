@@ -47,11 +47,11 @@ class Algorithm {
             val unitY = canvas.height.toFloat() / (size.height + numBlankArea)
             //if (Math.abs(unitX - unitY) > 0.1f) return null
 
-            val cX = (pointer.x / unitX).toInt() - numBlankArea
-            val cY = (pointer.y / unitY).toInt() - numBlankArea
-            if (cX < 0 || size.width < cX || cY < 0 || size.height < cY) return null
+            val cellX = (pointer.x / unitX).toInt() - numBlankArea
+            val cellY = (pointer.y / unitY).toInt() - numBlankArea
+            if (cellX < 0 || size.width < cellX || cellY < 0 || size.height < cellY) return null
 
-            return Point(cX, cY)
+            return Point(cellX, cellY)
         }
 
         fun createCanvasImage(canvas: ImageView?, size: Size): Bitmap? {

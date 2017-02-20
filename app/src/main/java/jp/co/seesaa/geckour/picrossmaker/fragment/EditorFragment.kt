@@ -67,13 +67,13 @@ class EditorFragment(listener: IListener): RxFragment() {
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        (activity as MainActivity).supportActionBar?.setTitle(R.string.action_bar_title_edit)
-
         onRefresh()
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+
+        (activity as MainActivity).supportActionBar?.setTitle(R.string.action_bar_title_edit)
 
         val fab = activity.findViewById(R.id.fab) as FloatingActionButton
         fab.tag = true

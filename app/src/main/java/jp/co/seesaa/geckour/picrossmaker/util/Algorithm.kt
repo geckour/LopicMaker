@@ -11,15 +11,6 @@ import java.util.*
 
 class Algorithm {
     companion object {
-        fun getHint(data: List<List<Boolean>>): List<List<Int>> {
-            for (l in data) {
-                for (b in l) {
-
-                }
-            }
-            return ArrayList()
-        }
-
         fun getNumBlankArea(size: Size?): Int {
             if (size == null) return 0
             if (size.width > 3 || size.height > 3) return 3
@@ -112,8 +103,8 @@ class Algorithm {
             p.color = Color.BLACK
             p.textSize = unit.toFloat()
             val bounds: Rect = Rect()
-            val textBaseHeight = blankWidth - unit / 2 - ((p.descent() + p.ascent()) / 2)
             p.getTextBounds("0", 0, "0".length, bounds)
+            val textBaseHeight = blankWidth - unit / 2 - ((p.descent() + p.ascent()) / 2)
             for (i in 0..size.width - 1) {
                 c.drawText("0", blankWidth + (i + 0.5f) * unit - bounds.exactCenterX(), textBaseHeight, p)
             }
@@ -125,7 +116,7 @@ class Algorithm {
             return bitmap
         }
 
-        fun onEditCanvasImage(image: Bitmap?, size: Size, cell: Cell): Bitmap? {
+        fun onEditCanvasImage(image: Bitmap?, size: Size, cells: List<Cell>, cell: Cell): Bitmap? {
             if (image == null || size.width < 1 || size.height < 1) return null
 
             val canvas = Canvas(image)
@@ -135,18 +126,109 @@ class Algorithm {
 
             paint.style = Paint.Style.FILL
             paint.color = if (cell.state) Color.BLACK else Color.WHITE
-            val startX = (numBlank + cell.coordinate.x) * unit.toFloat() + 1f
-            val startY = (numBlank + cell.coordinate.y) * unit.toFloat() + 1f
-            val rect = RectF(startX, startY, startX + unit.toFloat() - 2f, startY + unit.toFloat() - 2f)
-            Log.d("onEditCanvasImage", "rect: $rect")
+            val left = (numBlank + cell.coordinate.x) * unit.toFloat() + 1f
+            val top = (numBlank + cell.coordinate.y) * unit.toFloat() + 1f
+            val rect = RectF(left, top, left + unit.toFloat() - 2f, top + unit.toFloat() - 2f)
             path.addRect(rect, Path.Direction.CW)
             canvas.drawPath(path, paint)
+
+            refreshHints(canvas, size, cells, cell)
 
             return image
         }
 
+        fun refreshHints(canvas: Canvas, size: Size, cells: List<Cell>, cell: Cell): Canvas {
+            val row = getCellsInRow(cells, cell.coordinate.y, size) ?: return canvas
+            val column = getCellsInColumn(cells, cell.coordinate.x, size) ?: return canvas
+            val hintsRow = getHints(row)
+            val hintsColumn = getHints(column)
+
+            val paint = Paint()
+            paint.isAntiAlias = true
+            paint.style = Paint.Style.FILL
+            paint.textSize = unit.toFloat()
+
+            val numBlank = getNumBlankArea(size)
+            val bounds: Rect = Rect()
+            paint.getTextBounds("0", 0, "0".length, bounds)
+
+            val textBaseHeight = (numBlank + cell.coordinate.y + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
+            val initialWidth = (numBlank - hintsRow.size + 0.5f) * unit - bounds.exactCenterX()
+            paint.color = Color.WHITE
+            for (i in 0..numBlank - 1) {
+                val path = Path()
+                val left = i * unit + 1f
+                val top = (numBlank + cell.coordinate.y) * unit + 1f
+                val rect = RectF(left, top, left + unit - 2f, top + unit - 2f)
+                path.addRect(rect, Path.Direction.CW)
+                canvas.drawPath(path, paint)
+            }
+            paint.color = Color.BLACK
+            for ((index, value) in hintsRow.withIndex()) {
+                canvas.drawText(value.toString(), initialWidth + index * unit, textBaseHeight, paint)
+            }
+
+            val textBaseWidth = (numBlank + cell.coordinate.x + 0.5f) * unit - bounds.exactCenterX()
+            val initialHeight = (numBlank - hintsColumn.size + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
+            paint.color = Color.WHITE
+            for (i in 0..numBlank - 1) {
+                val path = Path()
+                val left = (numBlank + cell.coordinate.x) * unit + 1f
+                val top = i * unit + 1f
+                val rect = RectF(left, top, left + unit - 2f, top + unit - 2f)
+                path.addRect(rect, Path.Direction.CW)
+                canvas.drawPath(path, paint)
+            }
+            paint.color = Color.BLACK
+            for ((index, value) in hintsColumn.withIndex()) {
+                canvas.drawText(value.toString(), textBaseWidth, initialHeight + index * unit, paint)
+            }
+
+            return canvas
+        }
+
+        fun getHints(cells: List<Cell>): List<Int> {
+            val hints: ArrayList<Int> = ArrayList()
+            var stateBefore: Boolean? = null
+            for (cell in cells) {
+                if (stateBefore != null && !stateBefore && cell.state) hints.add(0)
+                if (cell.state) {
+                    if (hints.size < 1) hints.add(0)
+                    hints[hints.lastIndex] += 1
+                }
+
+                stateBefore = cell.state
+            }
+
+            if (hints.size < 1) hints.add(0)
+
+            return hints
+        }
+
         fun getCellByCoordinate(cells: List<Cell>, coordinate: Point): Cell? {
             return cells.firstOrNull { it.coordinate.equals(coordinate.x, coordinate.y) }
+        }
+
+        fun getCellsInColumn(cells: List<Cell>, index: Int, size: Size): List<Cell>? {
+            if (index < 0 || size.width < index) return null
+            val cellsInRow: ArrayList<Cell> = ArrayList()
+            for (i in 0..size.height - 1) {
+                val cell = getCellByCoordinate(cells, Point(index, i)) ?: return null
+                cellsInRow.add(cell)
+            }
+
+            return cellsInRow
+        }
+
+        fun getCellsInRow(cells: List<Cell>, index: Int, size: Size): List<Cell>? {
+            if (index < 0 || size.height < index) return null
+            val cellsInColumn: ArrayList<Cell> = ArrayList()
+            for (i in 0..size.width - 1) {
+                val cell = getCellByCoordinate(cells, Point(i, index)) ?: return null
+                cellsInColumn.add(cell)
+            }
+
+            return cellsInColumn
         }
     }
 }

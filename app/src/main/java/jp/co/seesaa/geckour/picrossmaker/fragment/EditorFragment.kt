@@ -147,14 +147,13 @@ class EditorFragment(listener: IListener): RxFragment() {
                     val cell = Algorithm.getCellByCoordinate(cells, coordCurrent) ?: return true
 
                     if (event.action == MotionEvent.ACTION_MOVE) {
-                        // TODO coordPrevのcell.state取得、分岐
                         val cellPrev = Algorithm.getCellByCoordinate(cells, coordPrev) ?: return true
                         cell.state = cellPrev.state
                     } else {
                         cell.state = !cell.state
                     }
 
-                    val bitmap = Algorithm.onEditCanvasImage((binding?.canvas?.drawable as BitmapDrawable).bitmap, size ?: Size(0, 0), cell)
+                    val bitmap = Algorithm.onEditCanvasImage((binding?.canvas?.drawable as BitmapDrawable).bitmap, size ?: Size(0, 0), cells, cell)
                     binding?.canvas?.setImageBitmap(bitmap)
                 }
                 pointPrev0.set(pointCurrent)

@@ -10,6 +10,9 @@ import android.util.Log
 import android.util.Size
 import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import jp.co.seesaa.geckour.picrossmaker.Constant
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
@@ -18,6 +21,7 @@ import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import jp.co.seesaa.geckour.picrossmaker.util.Algorithm
 import timber.log.Timber
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class EditorFragment(listener: IListener): RxFragment() {
     var listener: IListener? = null
@@ -56,7 +60,7 @@ class EditorFragment(listener: IListener): RxFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         this.size = arguments.getSize(Constant.ARGS_FRAGMENT_CANVAS_SIZE)
-        for (i in 0..(size?.width ?: 0) - 1) (0..(size?.height ?: 0) - 1).mapTo(cells) { Cell(Point(i, it)) }
+        Algorithm.initCells(cells, size ?: Size(0, 0))
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -66,6 +70,26 @@ class EditorFragment(listener: IListener): RxFragment() {
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // FIXME
+        Observable.create<Int> { source ->
+            Schedulers.newThread()
+                    .schedulePeriodicallyDirect({source.onNext(0)}, 0, 5, TimeUnit.SECONDS)
+        }
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .compose(bindToLifecycle())
+                .subscribe { i -> run {
+                    if (size == null) return@run
+                    if (Algorithm.editing) {
+                        val keysHorizontal: ArrayList<List<Int>> = (0..size!!.height)
+                                .mapTo(ArrayList()) { Algorithm.getKeys(Algorithm.getCellsInRow(cells, it, size!!) ?: return@run) }
+                        val keysVertical: ArrayList<List<Int>> = (0..size!!.width)
+                                .mapTo(ArrayList()) { Algorithm.getKeys(Algorithm.getCellsInColumn(cells, it, size!!) ?: return@run) }
+                        val result = Algorithm.isSolvable(size ?: Size(0, 0), keysHorizontal, keysVertical)
+                        Log.d("onCheckSolvable", "$result")
+                    }
+                } }
 
         onRefresh()
     }
@@ -140,17 +164,32 @@ class EditorFragment(listener: IListener): RxFragment() {
     fun onTouchCanvas(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                Algorithm.editing = false
                 pointPrev0.set(-1f, -1f)
                 pointPrev1.set(-1f, -1f)
+                val keysHorizontal: ArrayList<List<Int>> = (0..(size?.height ?: return true) - 1)
+                        .mapTo(ArrayList()) {
+                            val cellsInRow = Algorithm.getCellsInRow(cells, it, size ?: return true) ?: return true
+                            Algorithm.getKeys(cellsInRow)
+                        }
+                val keysVertical: ArrayList<List<Int>> = (0..(size?.width ?: return true) - 1)
+                        .mapTo(ArrayList()) {
+                            val cellsInColumn = Algorithm.getCellsInColumn(cells, it, size ?: return true) ?: return true
+                            Algorithm.getKeys(cellsInColumn)
+                        }
+
+                val result = Algorithm.isSolvable(size ?: return true, keysHorizontal, keysVertical)
+                Log.d("onMotionActionUp", "isSolvable: $result")
             }
 
             else -> {
+                Algorithm.editing = true
                 val pointCurrent = PointF(event.x, event.y)
-                val coordCurrent = Algorithm.getCoordinate(
+                val coordCurrent = Algorithm.getCoordinateFromTouchPoint(
                         binding?.canvas,
                         pointCurrent,
                         size ?: Size(0, 0)) ?: return true
-                val coordPrev = Algorithm.getCoordinate(
+                val coordPrev = Algorithm.getCoordinateFromTouchPoint(
                         binding?.canvas,
                         pointPrev0,
                         size ?: Size(0, 0)) ?: Point(-1, -1)
@@ -161,7 +200,7 @@ class EditorFragment(listener: IListener): RxFragment() {
                         val cellPrev = Algorithm.getCellByCoordinate(cells, coordPrev) ?: return true
                         cell.state = cellPrev.state
                     } else {
-                        cell.state = !cell.state
+                        cell.state = !cell.getState()
                     }
 
                     val bitmap = Algorithm.onEditCanvasImage((binding?.canvas?.drawable as BitmapDrawable).bitmap, size ?: Size(0, 0), cells, cell, true)

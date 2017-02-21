@@ -6,11 +6,21 @@ import android.util.Size
 import android.widget.ImageView
 import jp.co.seesaa.geckour.picrossmaker.Constant.Companion.unit
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
+import jp.co.seesaa.geckour.picrossmaker.model.KeysState
+import org.sat4j.core.VecInt
+import org.sat4j.minisat.SolverFactory
+import org.sat4j.specs.IProblem
 import java.util.*
 
 class Algorithm {
     companion object {
         val sizeBlankArea = Point(0, 0)
+        private val solver = SolverFactory.newDefault()
+        var editing = false
+
+        fun initCells(cells: ArrayList<Cell>, size: Size) {
+            for (i in 0..size.height - 1) (0..size.width - 1).mapTo(cells) { Cell(Point(it, i)) }
+        }
 
         fun getNumBlankArea(size: Size?): Int {
             if (size == null) return 0
@@ -30,7 +40,7 @@ class Algorithm {
             return PointF((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
         }
 
-        fun getCoordinate(canvas: ImageView?, pointer: PointF, size: Size): Point? {
+        fun getCoordinateFromTouchPoint(canvas: ImageView?, pointer: PointF, size: Size): Point? {
             if (canvas == null || size.width < 1 || size.height < 1) return null
 
 
@@ -114,7 +124,7 @@ class Algorithm {
             return bitmap
         }
 
-        fun onEditCanvasImage(image: Bitmap?, size: Size, cells: List<Cell>, cell: Cell, refreshHints: Boolean): Bitmap? {
+        fun onEditCanvasImage(image: Bitmap?, size: Size, cells: List<Cell>, cell: Cell, refreshkeys: Boolean): Bitmap? {
             if (image == null || size.width < 1 || size.height < 1) return null
 
             val canvas = Canvas(image)
@@ -122,21 +132,21 @@ class Algorithm {
             val path = Path()
 
             paint.style = Paint.Style.FILL
-            paint.color = if (cell.state) Color.BLACK else Color.WHITE
+            paint.color = if (cell.getState()) Color.BLACK else Color.WHITE
             val left = (sizeBlankArea.x + cell.coordinate.x) * unit.toFloat() + 1f
             val top = (sizeBlankArea.y + cell.coordinate.y) * unit.toFloat() + 1f
             val rect = RectF(left, top, left + unit.toFloat() - 2f, top + unit.toFloat() - 2f)
             path.addRect(rect, Path.Direction.CW)
             canvas.drawPath(path, paint)
 
-            return if (refreshHints) refreshHints(image, size, cells, cell) else image
+            return if (refreshkeys) refreshKeys(image, size, cells, cell) else image
         }
 
-        fun refreshCanvasSize(image: Bitmap, drawAreaSize: Size, hintsLengths: Size, cells: List<Cell>): Bitmap? {
-            if (hintsLengths.width > sizeBlankArea.x || hintsLengths.height > sizeBlankArea.y) {
+        fun refreshCanvasSize(image: Bitmap, drawAreaSize: Size, keysLengths: Size, cells: List<Cell>): Bitmap? {
+            if (keysLengths.width > sizeBlankArea.x || keysLengths.height > sizeBlankArea.y) {
 
-                sizeBlankArea.set(if (hintsLengths.width > sizeBlankArea.x) hintsLengths.width else sizeBlankArea.x,
-                        if (hintsLengths.height > sizeBlankArea.y) hintsLengths.height else sizeBlankArea.y)
+                sizeBlankArea.set(if (keysLengths.width > sizeBlankArea.x) keysLengths.width else sizeBlankArea.x,
+                        if (keysLengths.height > sizeBlankArea.y) keysLengths.height else sizeBlankArea.y)
                 var bitmap = createCanvasImage(drawAreaSize) ?: return image
 
                 for (cell in cells) bitmap = onEditCanvasImage(bitmap, drawAreaSize, cells, cell, false) ?: return image
@@ -147,26 +157,26 @@ class Algorithm {
             return null
         }
 
-        fun refreshAllHints(image: Bitmap, size: Size, cells: List<Cell>): Bitmap {
+        fun refreshAllKeys(image: Bitmap, size: Size, cells: List<Cell>): Bitmap {
             var bitmap = image
             val end = Math.max(size.width, size.height) - 1
             for (i in 0..end) {
                 val cell = getCellByCoordinate(cells, Point(i % size.width, i % size.height)) ?: return image
-                bitmap = refreshHints(image, size, cells, cell)
+                bitmap = refreshKeys(image, size, cells, cell)
             }
 
             return bitmap
         }
 
-        fun refreshHints(image: Bitmap, size: Size, cells: List<Cell>, cell: Cell): Bitmap {
+        fun refreshKeys(image: Bitmap, size: Size, cells: List<Cell>, cell: Cell): Bitmap {
             val row = getCellsInRow(cells, cell.coordinate.y, size) ?: return image
             val column = getCellsInColumn(cells, cell.coordinate.x, size) ?: return image
-            val hintsRow = getHints(row)
-            val hintsColumn = getHints(column)
+            val keysRow = getKeys(row)
+            val keysColumn = getKeys(column)
 
-            var bitmap = refreshCanvasSize(image, size, Size(hintsRow.size, hintsColumn.size), cells)
+            var bitmap = refreshCanvasSize(image, size, Size(keysRow.size, keysColumn.size), cells)
             if (bitmap != null) {
-                bitmap = refreshAllHints(bitmap, size, cells)
+                bitmap = refreshAllKeys(bitmap, size, cells)
             } else {
                 bitmap = image
             }
@@ -179,7 +189,7 @@ class Algorithm {
 
             val bounds: Rect = Rect()
             val textBaseHeight = (sizeBlankArea.y + cell.coordinate.y + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
-            val initialWidth = (sizeBlankArea.x - hintsRow.size + 0.5f) * unit
+            val initialWidth = (sizeBlankArea.x - keysRow.size + 0.5f) * unit
             paint.color = Color.WHITE
             for (i in 0..sizeBlankArea.x - 1) {
                 val path = Path()
@@ -190,13 +200,13 @@ class Algorithm {
                 canvas.drawPath(path, paint)
             }
             paint.color = Color.BLACK
-            for ((index, value) in hintsRow.withIndex()) {
+            for ((index, value) in keysRow.withIndex()) {
                 paint.getTextBounds(value.toString(), 0, value.toString().length, bounds)
                 canvas.drawText(value.toString(), initialWidth - bounds.exactCenterX() + index * unit, textBaseHeight, paint)
             }
 
             val textBaseWidth = (sizeBlankArea.x + cell.coordinate.x + 0.5f) * unit
-            val initialHeight = (sizeBlankArea.y - hintsColumn.size + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
+            val initialHeight = (sizeBlankArea.y - keysColumn.size + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
             paint.color = Color.WHITE
             for (i in 0..sizeBlankArea.y - 1) {
                 val path = Path()
@@ -207,7 +217,7 @@ class Algorithm {
                 canvas.drawPath(path, paint)
             }
             paint.color = Color.BLACK
-            for ((index, value) in hintsColumn.withIndex()) {
+            for ((index, value) in keysColumn.withIndex()) {
                 paint.getTextBounds(value.toString(), 0, value.toString().length, bounds)
                 canvas.drawText(value.toString(), textBaseWidth - bounds.exactCenterX(), initialHeight + index * unit, paint)
             }
@@ -215,26 +225,30 @@ class Algorithm {
             return bitmap
         }
 
-        fun getHints(cells: List<Cell>): List<Int> {
-            val hints: ArrayList<Int> = ArrayList()
+        fun getKeys(cells: List<Cell>): List<Int> {
+            val keys: ArrayList<Int> = ArrayList()
             var stateBefore: Boolean? = null
             for (cell in cells) {
-                if (stateBefore != null && !stateBefore && cell.state) hints.add(0)
-                if (cell.state) {
-                    if (hints.size < 1) hints.add(0)
-                    hints[hints.lastIndex] += 1
+                if (stateBefore != null && !stateBefore && cell.getState()) keys.add(0)
+                if (cell.getState()) {
+                    if (keys.size < 1) keys.add(0)
+                    keys[keys.lastIndex] += 1
                 }
 
                 stateBefore = cell.state
             }
 
-            if (hints.size < 1) hints.add(0)
+            if (keys.size < 1) keys.add(0)
 
-            return hints
+            return keys
         }
 
         fun getCellByCoordinate(cells: List<Cell>, coordinate: Point): Cell? {
             return cells.firstOrNull { it.coordinate.equals(coordinate.x, coordinate.y) }
+        }
+
+        fun getCellIndexByCoordinate(cells: List<Cell>, coordinate: Point): Int {
+            return cells.indexOfFirst { it.coordinate.equals(coordinate.x, coordinate.y) }
         }
 
         fun getCellsInColumn(cells: List<Cell>, index: Int, size: Size): List<Cell>? {
@@ -259,10 +273,118 @@ class Algorithm {
             return cellsInColumn
         }
 
-        fun isSolvable(hintsVertical: List<List<Int>>, hintsHorizontal: List<List<Int>>): Boolean {
-            val cells: ArrayList<Boolean?> = ArrayList()
-            for (i in 0..hintsVertical.size * hintsHorizontal.size - 1) cells.add(null)
-            
+        // FIXME
+        fun isSolvable(size: Size, keysHorizontal: List<List<Int>>, keysVertical: List<List<Int>>): Boolean {
+            solver.reset()
+
+            val cells: ArrayList<Cell> = ArrayList()
+            initCells(cells, size)
+
+            // row
+            for (i in 0..size.height - 1) {
+                val keysStateRow = KeysState(size.width, keysHorizontal[i])
+
+                if (!tseytinEncode1(keysStateRow)) return false
+                if (!tseytinEncode2(keysStateRow)) return false
+                if (!tseytinEncode3(keysStateRow, cells, Point(-1, i))) return false
+            }
+
+            // column
+            for (i in 0..size.width - 1) {
+                val keysStateColumn = KeysState(size.height, keysVertical[i])
+
+                if (!tseytinEncode1(keysStateColumn)) return false
+                if (!tseytinEncode2(keysStateColumn)) return false
+                if (!tseytinEncode3(keysStateColumn, cells, Point(i, -1))) return false
+            }
+
+            return (solver as IProblem).isSatisfiable
+        }
+
+        fun tseytinEncode1(keysState: KeysState): Boolean {
+            for (i in 0..keysState.keys.size - 1) {
+                val v = VecInt()
+
+                for (j in 0..keysState.slideMargin) {
+                    v.push(keysState.getCnfVar(i, j) ?: return false)
+                }
+
+                solver.addClause(v)
+            }
+
+            for (i in 0..keysState.slideMargin) {
+                for (j in 0..keysState.keys.size - 1) {
+                    for (k in i + 1..keysState.slideMargin) {
+                        val v = VecInt()
+                        v.push(-(keysState.getCnfVar(j, k) ?: return false))
+                        v.push(-(keysState.getCnfVar(j, i) ?: return false))
+
+                        solver.addClause(v)
+                    }
+                }
+            }
+
+            return true
+        }
+
+        fun tseytinEncode2(keysState: KeysState): Boolean {
+            for (i in 0..keysState.keys.size - 2) {
+                for (j in 0..keysState.slideMargin) {
+                    val v = VecInt()
+                    v.push(-(keysState.getCnfVar(i, j) ?: return false))
+
+                    for (k in 0..keysState.slideMargin) v.push(keysState.getCnfVar(i + 1, k) ?: return false)
+
+                    solver.addClause(v)
+                }
+            }
+
+            return true
+        }
+
+        fun tseytinEncode3(keysState: KeysState, cells: List<Cell>, coordinate: Point): Boolean {
+            val isRow = coordinate.x < 0
+
+            for (i in 0..keysState.lineSize - 1) {
+                if (isRow) coordinate.x = i else coordinate.y = i
+                val v = VecInt()
+                val cellIndex = getCellIndexByCoordinate(cells, coordinate) + 1
+                if (cellIndex < 1) return false
+                v.push(-cellIndex)
+
+                for ((j, key) in keysState.keys.withIndex()) {
+                    for (k in 0..keysState.slideMargin) {
+                        for (l in 0..key - 1) {
+                            if (i == (keysState.getPreKeysSum(j) ?: return false) + j + k + l) {
+                                v.push(keysState.getCnfVar(j, k) ?: return false)
+                            }
+                        }
+                    }
+
+                    solver.addClause(v)
+                }
+            }
+
+            for (i in 0..keysState.lineSize - 1) {
+                if (isRow) coordinate.x = i else coordinate.y = i
+                val cellIndex = getCellIndexByCoordinate(cells, coordinate) + 1
+                if (cellIndex < 1) return false
+
+                for ((j, key) in keysState.keys.withIndex()) {
+                    for (k in 0..keysState.slideMargin) {
+                        for (l in 0..key - 1) {
+                            if (i == (keysState.getPreKeysSum(j) ?: return false) + j + k + l) {
+                                val v = VecInt()
+                                v.push(cellIndex)
+                                v.push(keysState.getCnfVar(j, k) ?: return false)
+
+                                solver.addClause(v)
+                            }
+                        }
+                    }
+                }
+            }
+
             return true
         }
     }

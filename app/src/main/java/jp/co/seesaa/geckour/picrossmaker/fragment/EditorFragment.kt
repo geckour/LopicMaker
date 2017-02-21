@@ -98,12 +98,14 @@ class EditorFragment(listener: IListener): RxFragment() {
                             true
                         }
 
-                        else ->
+                        else -> {
+                            val p0 = PointF(event.getX(0), event.getY(0))
                             if (event.pointerCount > 1) {
-                                val p0 = PointF(event.getX(0), event.getY(0))
                                 val p1 = PointF(event.getX(1), event.getY(1))
                                 onScale(p0, p1)
-                            } else true
+                            }
+                            else onDrag(p0)
+                        }
                     }
                 } else false
             }
@@ -123,6 +125,15 @@ class EditorFragment(listener: IListener): RxFragment() {
         binding?.canvas?.scaleY = binding?.canvas?.scaleY?.times(scale) ?: 1f
         pointPrev0.set(pointCurrent0)
         pointPrev1.set(pointCurrent1)
+        return true
+    }
+
+    fun onDrag(pointCurrent0: PointF): Boolean {
+        if (pointPrev0.x < 0f) pointPrev0.set(pointCurrent0)
+        val diff = Algorithm.getPointDiff(pointPrev0, pointCurrent0)
+        binding?.canvas?.translationX = binding?.canvas?.translationX?.plus(diff.x) ?: 0f
+        binding?.canvas?.translationY = binding?.canvas?.translationY?.plus(diff.y) ?: 0f
+        pointPrev0.set(pointCurrent0)
         return true
     }
 

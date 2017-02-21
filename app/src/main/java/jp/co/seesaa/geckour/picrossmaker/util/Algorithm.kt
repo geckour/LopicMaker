@@ -11,6 +11,7 @@ import java.util.*
 class Algorithm {
     companion object {
         val sizeBlankArea = Point(0, 0)
+
         fun getNumBlankArea(size: Size?): Int {
             if (size == null) return 0
             if (size.width > 3 || size.height > 3) return 3
@@ -35,7 +36,7 @@ class Algorithm {
 
             val unitX = canvas.width.toFloat() / (size.width + sizeBlankArea.x)
             val unitY = canvas.height.toFloat() / (size.height + sizeBlankArea.y)
-            //if (Math.abs(unitX - unitY) > 0.1f) return null
+            if (Math.abs(unitX - unitY) > 0.1f) return null
 
             val cellX = (pointer.x / unitX).toInt() - sizeBlankArea.x
             val cellY = (pointer.y / unitY).toInt() - sizeBlankArea.y
@@ -258,7 +259,10 @@ class Algorithm {
             return cellsInColumn
         }
 
-        fun isSolvable(cells: List<Cell>): Boolean {
+        fun isSolvable(hintsVertical: List<List<Int>>, hintsHorizontal: List<List<Int>>): Boolean {
+            val cells: ArrayList<Boolean?> = ArrayList()
+            for (i in 0..hintsVertical.size * hintsHorizontal.size - 1) cells.add(null)
+            
             return true
         }
     }

@@ -58,20 +58,6 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        val id = item.itemId
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true
-        }
-
-        return super.onOptionsItemSelected(item)
-    }
-
     @SuppressWarnings("StatementWithEmptyBody")
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         // Handle navigation view item clicks here.

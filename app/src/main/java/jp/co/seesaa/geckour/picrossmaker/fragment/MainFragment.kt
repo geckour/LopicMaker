@@ -8,9 +8,7 @@ import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.util.Size
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
@@ -93,5 +91,25 @@ class MainFragment: RxFragment() {
         }
 
         binding?.recyclerView?.layoutManager = LinearLayoutManager(activity)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
+        super.onCreateOptionsMenu(menu, inflater)
+
+        inflater?.inflate(R.menu.main, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        val id = item.itemId
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true
+        }
+
+        return super.onOptionsItemSelected(item)
     }
 }

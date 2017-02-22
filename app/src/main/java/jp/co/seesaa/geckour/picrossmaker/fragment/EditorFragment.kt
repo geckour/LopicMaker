@@ -10,9 +10,6 @@ import android.util.Log
 import android.util.Size
 import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
 import jp.co.seesaa.geckour.picrossmaker.Constant
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
@@ -21,15 +18,15 @@ import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import jp.co.seesaa.geckour.picrossmaker.util.Algorithm
 import timber.log.Timber
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 class EditorFragment(listener: IListener): RxFragment() {
     var listener: IListener? = null
-    private var size: Size? = null
+    private var size = Point(0, 0)
     private var binding: FragmentEditorBinding? = null
     private val pointPrev0 = PointF(-1f, -1f)
     private val pointPrev1 = PointF(-1f, -1f)
-    private val cells: ArrayList<Cell> = ArrayList()
+    private var isSolvable = true
+    private var algorythm = Algorithm(size)
 
     interface IListener {
         fun onCanvasSizeError(size: Size)
@@ -53,14 +50,12 @@ class EditorFragment(listener: IListener): RxFragment() {
         }
 
         val TAG = "editorFragment"
-        const val MODE_EDIT: Boolean = true
-        const val MODE_ZOOM: Boolean = false
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        this.size = arguments.getSize(Constant.ARGS_FRAGMENT_CANVAS_SIZE)
-        Algorithm.initCells(cells, size ?: Size(0, 0))
+        val size = arguments.getSize(Constant.ARGS_FRAGMENT_CANVAS_SIZE)
+        this.size.set(size.width, size.height)
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -70,26 +65,6 @@ class EditorFragment(listener: IListener): RxFragment() {
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // FIXME
-        Observable.create<Int> { source ->
-            Schedulers.newThread()
-                    .schedulePeriodicallyDirect({source.onNext(0)}, 0, 5, TimeUnit.SECONDS)
-        }
-                .subscribeOn(Schedulers.newThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .compose(bindToLifecycle())
-                .subscribe { i -> run {
-                    if (size == null) return@run
-                    if (Algorithm.editing) {
-                        val keysHorizontal: ArrayList<List<Int>> = (0..size!!.height)
-                                .mapTo(ArrayList()) { Algorithm.getKeys(Algorithm.getCellsInRow(cells, it, size!!) ?: return@run) }
-                        val keysVertical: ArrayList<List<Int>> = (0..size!!.width)
-                                .mapTo(ArrayList()) { Algorithm.getKeys(Algorithm.getCellsInColumn(cells, it, size!!) ?: return@run) }
-                        val result = Algorithm.isSolvable(size ?: Size(0, 0), keysHorizontal, keysVertical)
-                        Log.d("onCheckSolvable", "$result")
-                    }
-                } }
 
         onRefresh()
     }
@@ -136,13 +111,44 @@ class EditorFragment(listener: IListener): RxFragment() {
         }
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
+        super.onCreateOptionsMenu(menu, inflater)
+
+        inflater?.inflate(R.menu.editor, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        val id = item.itemId
+
+        //noinspection SimplifiableIfStatement
+        return when (id) {
+            R.id.action_settings -> {
+                true
+            }
+
+            R.id.action_save -> {
+                if (isSolvable) {
+                    onSaveCanvas()
+                }
+                true
+            }
+
+            else -> {
+                return super.onOptionsItemSelected(item)
+            }
+        }
+    }
+
     fun onScale (pointCurrent0: PointF, pointCurrent1: PointF): Boolean {
         if (pointPrev0.x < 0f) pointPrev0.set(pointCurrent0)
         if (pointPrev1.x < 0f) pointPrev1.set(pointCurrent1)
-        val scale = Algorithm.getScale(Algorithm.getPointDiff(pointPrev0, pointPrev1).length(), Algorithm.getPointDiff(pointCurrent0, pointCurrent1).length())
-        val pointMidPrev = Algorithm.getPointMid(pointPrev0, pointPrev1)
-        val pointMidCurrent = Algorithm.getPointMid(pointCurrent0, pointCurrent1)
-        val diff = Algorithm.getPointDiff(pointMidPrev, pointMidCurrent)
+        val scale = algorythm.getScale(algorythm.getPointDiff(pointPrev0, pointPrev1).length(), algorythm.getPointDiff(pointCurrent0, pointCurrent1).length())
+        val pointMidPrev = algorythm.getPointMid(pointPrev0, pointPrev1)
+        val pointMidCurrent = algorythm.getPointMid(pointCurrent0, pointCurrent1)
+        val diff = algorythm.getPointDiff(pointMidPrev, pointMidCurrent)
         binding?.canvas?.translationX = binding?.canvas?.translationX?.plus(diff.x) ?: 0f
         binding?.canvas?.translationY = binding?.canvas?.translationY?.plus(diff.y) ?: 0f
         binding?.canvas?.scaleX = binding?.canvas?.scaleX?.times(scale) ?: 1f
@@ -154,7 +160,7 @@ class EditorFragment(listener: IListener): RxFragment() {
 
     fun onDrag(pointCurrent0: PointF): Boolean {
         if (pointPrev0.x < 0f) pointPrev0.set(pointCurrent0)
-        val diff = Algorithm.getPointDiff(pointPrev0, pointCurrent0)
+        val diff = algorythm.getPointDiff(pointPrev0, pointCurrent0)
         binding?.canvas?.translationX = binding?.canvas?.translationX?.plus(diff.x) ?: 0f
         binding?.canvas?.translationY = binding?.canvas?.translationY?.plus(diff.y) ?: 0f
         pointPrev0.set(pointCurrent0)
@@ -164,51 +170,51 @@ class EditorFragment(listener: IListener): RxFragment() {
     fun onTouchCanvas(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
-                Algorithm.editing = false
                 pointPrev0.set(-1f, -1f)
                 pointPrev1.set(-1f, -1f)
-                val keysHorizontal: ArrayList<List<Int>> = (0..(size?.height ?: return true) - 1)
+                val keysHorizontal: ArrayList<List<Int>> = (0..size.y - 1)
                         .mapTo(ArrayList()) {
-                            val cellsInRow = Algorithm.getCellsInRow(cells, it, size ?: return true) ?: return true
-                            Algorithm.getKeys(cellsInRow)
+                            val cellsInRow = algorythm.getCellsInRow(it) ?: return true
+                            algorythm.getKeys(cellsInRow)
                         }
-                val keysVertical: ArrayList<List<Int>> = (0..(size?.width ?: return true) - 1)
+                val keysVertical: ArrayList<List<Int>> = (0..size.x - 1)
                         .mapTo(ArrayList()) {
-                            val cellsInColumn = Algorithm.getCellsInColumn(cells, it, size ?: return true) ?: return true
-                            Algorithm.getKeys(cellsInColumn)
+                            val cellsInColumn = algorythm.getCellsInColumn(it) ?: return true
+                            algorythm.getKeys(cellsInColumn)
                         }
 
-                val result = Algorithm.isSolvable(size ?: return true, keysHorizontal, keysVertical)
-                Log.d("onMotionActionUp", "isSolvable: $result")
+                isSolvable = algorythm.isSolvable(keysHorizontal, keysVertical)
+                Log.d("onMotionActionUp", "isSolvable: $isSolvable")
             }
 
             else -> {
-                Algorithm.editing = true
+                if (event.action == MotionEvent.ACTION_MOVE) isSolvable = false
+
                 val pointCurrent = PointF(event.x, event.y)
-                val coordCurrent = Algorithm.getCoordinateFromTouchPoint(
+                val coordCurrent = algorythm.getCoordinateFromTouchPoint(
                         binding?.canvas,
-                        pointCurrent,
-                        size ?: Size(0, 0)) ?: return true
-                val coordPrev = Algorithm.getCoordinateFromTouchPoint(
+                        pointCurrent) ?: return true
+                val coordPrev = algorythm.getCoordinateFromTouchPoint(
                         binding?.canvas,
-                        pointPrev0,
-                        size ?: Size(0, 0)) ?: Point(-1, -1)
+                        pointPrev0) ?: Point(-1, -1)
                 if (!coordCurrent.equals(coordPrev.x, coordPrev.y)) {
-                    val cell = Algorithm.getCellByCoordinate(cells, coordCurrent) ?: return true
+                    val cell = algorythm.getCellByCoordinate(coordCurrent) ?: return true
 
                     if (event.action == MotionEvent.ACTION_MOVE) {
-                        val cellPrev = Algorithm.getCellByCoordinate(cells, coordPrev) ?: return true
+                        val cellPrev = algorythm.getCellByCoordinate(coordPrev) ?: return true
                         cell.state = cellPrev.state
                     } else {
                         cell.state = !cell.getState()
                     }
 
-                    val bitmap = Algorithm.onEditCanvasImage((binding?.canvas?.drawable as BitmapDrawable).bitmap, size ?: Size(0, 0), cells, cell, true)
+                    val bitmap = algorythm.onEditCanvasImage((binding?.canvas?.drawable as BitmapDrawable).bitmap, cell, true)
                     binding?.canvas?.setImageBitmap(bitmap)
                 }
                 pointPrev0.set(pointCurrent)
             }
         }
+
+
 
         return true
     }
@@ -218,8 +224,11 @@ class EditorFragment(listener: IListener): RxFragment() {
     }
 
     fun onRefresh() {
-        val numBlank = Algorithm.getNumBlankArea(size)
-        Algorithm.sizeBlankArea.set(numBlank, numBlank)
-        binding?.canvas?.setImageBitmap(Algorithm.createCanvasImage(size ?: Size(0, 0)))
+        this.algorythm = Algorithm(size)
+        binding?.canvas?.setImageBitmap(algorythm.createCanvasImage())
+    }
+
+    fun onSaveCanvas() {
+
     }
 }

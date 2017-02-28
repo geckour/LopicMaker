@@ -30,7 +30,8 @@ import java.util.*
 
 class EditorFragment(listener: IListener): RxFragment() {
     val listener: IListener
-    private var size = Point(0, 0)
+    private val size = Point(0, 0)
+    private var draftId = -1L
     lateinit private var binding: FragmentEditorBinding
     private val pointPrev0 = PointF(-1f, -1f)
     private val pointPrev1 = PointF(-1f, -1f)
@@ -58,6 +59,17 @@ class EditorFragment(listener: IListener): RxFragment() {
             return fragment
         }
 
+        fun newInstance(id: Long, listener: IListener): EditorFragment? {
+            if (id > 0) {
+                val fragment = EditorFragment(listener)
+                val args = Bundle()
+                args.putLong(Constant.ARGS_FRAGMENT_DRAFT_ID, id)
+                fragment.arguments = args
+                return fragment
+            }
+            return null
+        }
+
         val TAG = "editorFragment"
     }
 
@@ -65,8 +77,12 @@ class EditorFragment(listener: IListener): RxFragment() {
         super.onCreate(savedInstanceState)
 
         setHasOptionsMenu(true)
-        val size = arguments.getSize(Constant.ARGS_FRAGMENT_CANVAS_SIZE)
-        this.size.set(size.width, size.height)
+
+        this.draftId = arguments.getLong(Constant.ARGS_FRAGMENT_DRAFT_ID, -1)
+        if (this.draftId < 0) {
+            val size = arguments.getSize(Constant.ARGS_FRAGMENT_CANVAS_SIZE)
+            this.size.set(size.width, size.height)
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -197,7 +213,7 @@ class EditorFragment(listener: IListener): RxFragment() {
                 Log.d("onMotionActionUp", "isSolvable: $isSolvable")
             }
 
-            else -> {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_MOVE -> {
                 if (event.action == MotionEvent.ACTION_MOVE) isSolvable = false
 
                 val pointCurrent = PointF(event.x, event.y)
@@ -211,10 +227,13 @@ class EditorFragment(listener: IListener): RxFragment() {
                     val cell = algorithm.getCellByCoordinate(coordCurrent) ?: return true
 
                     if (event.action == MotionEvent.ACTION_MOVE) {
-                        val cellPrev = algorithm.getCellByCoordinate(coordPrev) ?: return true
-                        cell.state = cellPrev.state
+                        val cellPrev = algorithm.getCellByCoordinate(coordPrev) ?: run {
+                            pointPrev0.set(-1f, -1f)
+                            return true
+                        }
+                        cell.setState(cellPrev.getState())
                     } else {
-                        cell.state = !cell.getState()
+                        cell.setState(!cell.getState())
                     }
 
                     val bitmap = algorithm.onEditCanvasImage((binding.canvas.drawable as BitmapDrawable).bitmap, cell, true)
@@ -224,8 +243,6 @@ class EditorFragment(listener: IListener): RxFragment() {
             }
         }
 
-
-
         return true
     }
 
@@ -234,8 +251,16 @@ class EditorFragment(listener: IListener): RxFragment() {
     }
 
     fun onRefresh() {
-        this.algorithm = Algorithm(size)
-        binding.canvas.setImageBitmap(algorithm.createCanvasImage())
+        if (this.draftId < 0) {
+            this.algorithm = Algorithm(size)
+            binding.canvas.setImageBitmap(algorithm.createCanvasImage())
+        } else {
+            val draftProblem = OrmaProvider.db.selectFromDraftProblem().idEq(this.draftId).value()
+            this.size.set(draftProblem.keysHorizontal.keys.size, draftProblem.keysVertical.keys.size)
+            this.algorithm = Algorithm(size)
+            val bitmap = this.algorithm.setCells(draftProblem.catalog.cells)
+            binding.canvas.setImageBitmap(bitmap)
+        }
     }
 
     fun onSaveCanvas() {

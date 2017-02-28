@@ -3,7 +3,7 @@ package jp.co.seesaa.geckour.picrossmaker.model
 import android.graphics.Point
 
 data class Cell(val coordinate: Point = Point(0, 0),
-                var state: Boolean? = false) {
+                private var state: Boolean? = false) {
 
     var str = ""
 
@@ -13,6 +13,10 @@ data class Cell(val coordinate: Point = Point(0, 0),
 
     fun getStateNullable(): Boolean? {
         return state
+    }
+
+    fun setState(state: Boolean?) {
+        this.state = state
     }
 
     companion object {

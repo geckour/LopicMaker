@@ -17,20 +17,13 @@ data class DraftProblem(@Setter("id") @PrimaryKey(autoincrement = true) val id: 
                         @Setter("thumb") @Column @Nullable var thumb: Bitmap?,
                         @Setter("created_at") @Column val createdAt: Timestamp,
                         @Setter("edited_at") @Column var editedAt: Timestamp,
-                        @Setter("cells") @Column var cells: Cell.Companion.Catalog) {
-
-    constructor(id: Long,
-                title: String,
-                keysHorizontal: Problem.Companion.KeysCluster,
-                keysVertical: Problem.Companion.KeysCluster,
-                thumb: Bitmap?,
-                cells: Cell.Companion.Catalog):
-            this(id, title, keysHorizontal, keysVertical, thumb, Timestamp(System.currentTimeMillis()), Timestamp(System.currentTimeMillis()), cells)
+                        @Setter("catalog") @Column var catalog: Cell.Companion.Catalog) {
 
     constructor(id: Long = -1L,
                 title: String = "no title",
                 keysHorizontal: Problem.Companion.KeysCluster = Problem.Companion.KeysCluster(),
                 keysVertical: Problem.Companion.KeysCluster = Problem.Companion.KeysCluster(),
-                cells: Cell.Companion.Catalog = Cell.Companion.Catalog(ArrayList<Cell>())):
-            this(id, title, keysHorizontal, keysVertical, null, cells)
+                thumb: Bitmap? = null,
+                catalog: Cell.Companion.Catalog = Cell.Companion.Catalog(ArrayList<Cell>())):
+            this(id, title, keysHorizontal, keysVertical, thumb, Timestamp(System.currentTimeMillis()), Timestamp(System.currentTimeMillis()), catalog)
 }

@@ -25,7 +25,7 @@ class DraftProblemsListAdapter(val listener: DraftProblemsListAdapter.IListener)
         notifyItemRangeInserted(size - 1, draftProblems.size)
     }
 
-    fun getProblemByIndex(position: Int): DraftProblem? {
+    fun getDraftProblemByIndex(position: Int): DraftProblem? {
         return if (-1 < position && position < draftProblems.size) draftProblems[position] else null
     }
 
@@ -47,10 +47,6 @@ class DraftProblemsListAdapter(val listener: DraftProblemsListAdapter.IListener)
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent?.context).inflate(R.layout.item_problem, parent, false)
         val holder = ViewHolder(view)
-        val position = holder.adapterPosition
-
-        holder.itemView.setOnClickListener { view -> listener.onClickDraftProblemItem(position) }
-        holder.itemView.setOnLongClickListener { view -> listener.onLongClickDraftProblemItem(position) }
 
         return holder
     }
@@ -59,6 +55,8 @@ class DraftProblemsListAdapter(val listener: DraftProblemsListAdapter.IListener)
         val pos = holder.adapterPosition
         val problem = draftProblems[pos]
         holder.bindData(problem)
+        holder.itemView.setOnClickListener { view -> listener.onClickDraftProblemItem(pos) }
+        holder.itemView.setOnLongClickListener { view -> listener.onLongClickDraftProblemItem(pos) }
     }
 
     override fun getItemCount(): Int {

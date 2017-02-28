@@ -88,9 +88,9 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
                                 if (result != null && result is Size) {
                                     val fragment = EditorFragment.newInstance(result, object : EditorFragment.IListener {
                                         override fun onCanvasSizeError(size: Size) {
-                                            Snackbar
-                                                    .make(findViewById(R.id.container), R.string.problem_fragment_error_invalid_size, Snackbar.LENGTH_SHORT)
-                                                    .show()
+                                            Snackbar.make(findViewById(R.id.container),
+                                                    R.string.problem_fragment_error_invalid_size,
+                                                    Snackbar.LENGTH_SHORT).show()
                                         }
                                     })
                                     if (fragment != null) {

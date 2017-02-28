@@ -15,12 +15,28 @@ open class CanvasUtil(val size: Point) {
     init {
         val blankArea = getNumBlankArea()
         sizeBlankArea.set(blankArea, blankArea)
-        initCells(cells)
+        initCells()
+    }
+
+    fun initCells() {
+        cells.clear()
+        for (i in 0..size.y - 1) (0..size.x - 1).mapTo(cells) { Cell(Point(it, i)) }
     }
 
     fun initCells(cells: ArrayList<Cell>) {
         cells.clear()
         for (i in 0..size.y - 1) (0..size.x - 1).mapTo(cells) { Cell(Point(it, i)) }
+    }
+
+    fun setCells(cells: List<Cell>): Bitmap? {
+        this.cells.clear()
+        this.cells.addAll(cells)
+        var bitmap = createCanvasImage()
+        this.cells
+                .filter { it.getState() }
+                .forEach { bitmap = onEditCanvasImage(bitmap, it, true) }
+
+        return bitmap
     }
 
     fun getCells(): List<Cell> {
@@ -140,7 +156,7 @@ open class CanvasUtil(val size: Point) {
         return bitmap
     }
 
-    fun onEditCanvasImage(image: Bitmap?, cell: Cell, refreshkeys: Boolean): Bitmap? {
+    fun onEditCanvasImage(image: Bitmap?, cell: Cell, refreshKeys: Boolean): Bitmap? {
         if (image == null || size.x < 1 || size.y < 1) return null
 
         val canvas = Canvas(image)
@@ -155,7 +171,7 @@ open class CanvasUtil(val size: Point) {
         path.addRect(rect, Path.Direction.CW)
         canvas.drawPath(path, paint)
 
-        return if (refreshkeys) refreshKeys(image, cell) else image
+        return if (refreshKeys) refreshKeys(image, cell) else image
     }
 
     fun refreshCanvasSize(image: Bitmap, keysLengths: Size): Bitmap? {
@@ -251,7 +267,7 @@ open class CanvasUtil(val size: Point) {
                 keys[keys.lastIndex] += 1
             }
 
-            stateBefore = cell.state
+            stateBefore = cell.getState()
         }
 
         if (keys.size < 1) keys.add(0)

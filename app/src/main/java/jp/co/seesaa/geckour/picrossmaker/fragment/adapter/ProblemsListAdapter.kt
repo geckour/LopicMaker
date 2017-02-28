@@ -47,10 +47,6 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent?.context).inflate(R.layout.item_problem, parent, false)
         val holder = ViewHolder(view)
-        val position = holder.adapterPosition
-
-        holder.itemView.setOnClickListener { view -> listener.onClickProblemItem(position) }
-        holder.itemView.setOnLongClickListener { view -> listener.onLongClickProblemItem(position) }
 
         return holder
     }
@@ -59,6 +55,9 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
         val pos = holder.adapterPosition
         val problem = problems[pos]
         holder.bindData(problem)
+
+        holder.itemView.setOnClickListener { view -> listener.onClickProblemItem(pos) }
+        holder.itemView.setOnLongClickListener { view -> listener.onLongClickProblemItem(pos) }
     }
 
     override fun getItemCount(): Int {

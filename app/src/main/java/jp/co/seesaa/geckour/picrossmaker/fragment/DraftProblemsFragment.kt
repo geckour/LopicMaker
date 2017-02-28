@@ -146,7 +146,23 @@ class DraftProblemsFragment: RxFragment() {
     fun getAdapter(): DraftProblemsListAdapter {
         return DraftProblemsListAdapter(object: DraftProblemsListAdapter.IListener {
             override fun onClickDraftProblemItem(position: Int) {
-
+                val id = adapter.getDraftProblemByIndex(position)?.id
+                Log.d("onClickDraftProblemItem", "id: $id")
+                if (id != null) {
+                    val fragment = EditorFragment.newInstance(id, object: EditorFragment.IListener {
+                        override fun onCanvasSizeError(size: Size) {
+                            Snackbar.make(activity.findViewById(R.id.container),
+                                    R.string.problem_fragment_error_invalid_size,
+                                    Snackbar.LENGTH_SHORT).show()
+                        }
+                    })
+                    if (fragment != null) {
+                        fragmentManager.beginTransaction()
+                                .replace(R.id.container, fragment)
+                                .addToBackStack(null)
+                                .commit()
+                    }
+                }
             }
 
             override fun onLongClickDraftProblemItem(position: Int): Boolean {
@@ -162,8 +178,7 @@ class DraftProblemsFragment: RxFragment() {
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder?, direction: Int) {
                 val position = viewHolder?.adapterPosition
                 if (position != null) {
-                    val id = adapter.getProblemByIndex(position)?.id ?: -1
-                    Log.d("onSwiped", "id: $id")
+                    val id = adapter.getDraftProblemByIndex(position)?.id ?: -1
                     OrmaProvider.db.deleteFromDraftProblem()
                             .idEq(id)
                             .executeAsSingle()
@@ -177,7 +192,6 @@ class DraftProblemsFragment: RxFragment() {
                                             Snackbar.LENGTH_SHORT).show()
                                     adapter.removeDraftProblemsByIndex(position)
                                 } else {
-                                    Log.d("onSwiped", "deletedId: $deleteNum")
                                     Snackbar.make(activity.findViewById(R.id.container),
                                             R.string.problem_fragment_error_failure_delete,
                                             Snackbar.LENGTH_SHORT).show()

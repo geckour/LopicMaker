@@ -12,7 +12,6 @@ import android.util.Log
 import android.util.Size
 import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
-import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import jp.co.seesaa.geckour.picrossmaker.R
@@ -143,7 +142,22 @@ class ProblemsFragment: RxFragment() {
     fun getAdapter(): ProblemsListAdapter {
         return ProblemsListAdapter(object: ProblemsListAdapter.IListener {
             override fun onClickProblemItem(position: Int) {
-
+                val id = adapter.getProblemByIndex(position)?.id
+                if (id != null) {
+                    val fragment = EditorFragment.newInstance(id, object: EditorFragment.IListener {
+                        override fun onCanvasSizeError(size: Size) {
+                            Snackbar.make(activity.findViewById(R.id.container),
+                                    R.string.problem_fragment_error_invalid_size,
+                                    Snackbar.LENGTH_SHORT).show()
+                        }
+                    })
+                    if (fragment != null) {
+                        fragmentManager.beginTransaction()
+                                .replace(R.id.container, fragment)
+                                .addToBackStack(null)
+                                .commit()
+                    }
+                }
             }
 
             override fun onLongClickProblemItem(position: Int): Boolean {
@@ -172,7 +186,6 @@ class ProblemsFragment: RxFragment() {
                                             Snackbar.LENGTH_SHORT).show()
                                     adapter.removeProblemsByIndex(position)
                                 } else {
-                                    Log.d("onSwiped", "id: $deleteNum")
                                     Snackbar.make(activity.findViewById(R.id.container),
                                             R.string.problem_fragment_error_failure_delete,
                                             Snackbar.LENGTH_SHORT).show()

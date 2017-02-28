@@ -4,4 +4,6 @@
     <color name="colorPrimaryDark">#0277bd</color>
     <color name="colorAccent">#2979ff</color>
     <color name="colorEditorBackground">#404040</color>
+    <color name="colorSideNavStart">#0288d1</color>
+    <color name="colorSideNavEnd">#01579b</color>
 </resources>

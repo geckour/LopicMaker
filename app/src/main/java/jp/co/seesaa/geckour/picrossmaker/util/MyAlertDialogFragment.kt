@@ -31,7 +31,11 @@ class MyAlertDialogFragment(val listener: IListener) : DialogFragment() {
             val ARGS_REQUEST_CODE = "requestCode"
             val ARGS_CANCELABLE = "cancelable"
             val TAG_DEFINE_SIZE = "defineSize"
+            val TAG_SAVE_PROBLEM = "saveProblem"
+            val TAG_SAVE_DRAFT_PROBLEM = "saveDraftProblem"
             val REQUEST_CODE_DEFINE_SIZE = 1
+            val REQUEST_CODE_SAVE_PROBLEM = 2
+            val REQUEST_CODE_SAVE_DRAFT_PROBLEM = 3
         }
 
         init {
@@ -91,31 +95,32 @@ class MyAlertDialogFragment(val listener: IListener) : DialogFragment() {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         when (getRequestCode()) {
             Builder.REQUEST_CODE_DEFINE_SIZE -> {
                 binding = DataBindingUtil.inflate(inflater, R.layout.dialog_define_size, container, false)
-                if (binding != null) return binding!!.root
-                if (inflater != null) return inflater.inflate(R.layout.dialog_define_size, container)
+                return binding?.root
             }
         }
-        return super.onCreateView(inflater, container, savedInstanceState)
+
+        return inflater?.inflate(R.layout.dialog_define_size, container)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val resId = arguments.getInt(Builder.ARGS_RES_ID)
+        val resId = arguments.getInt(Builder.ARGS_RES_ID, -1)
         if (savedInstanceState == null) {
             isCancelable = arguments.getBoolean(Builder.ARGS_CANCELABLE)
             val builder = AlertDialog.Builder(activity)
                     .setTitle(arguments.getString(Builder.ARGS_TITLE))
                     .setMessage(arguments.getString(Builder.ARGS_MESSAGE))
-                    .setView(resId)
                     .setNegativeButton(
                             R.string.dialog_alert_cancel,
                             { dialogInterface, which -> this.dismiss() })
                     .setPositiveButton(
                             R.string.dialog_alert_confirm,
                             { dialogInterface, which -> fireListener(dialogInterface, which) })
+
+            if (resId > 0) builder.setView(resId)
 
             return builder.create()
         }
@@ -124,12 +129,19 @@ class MyAlertDialogFragment(val listener: IListener) : DialogFragment() {
     }
 
     private fun fireListener(dialogInterface: DialogInterface, which: Int) {
-        when (getRequestCode()) {
-            Builder.REQUEST_CODE_DEFINE_SIZE -> {
-                listener.onResultAlertDialog(dialogInterface, getRequestCode(), which, getSize())
-            }
-            else -> listener.onResultAlertDialog(dialogInterface, getRequestCode(), which)
-        }
+        listener.onResultAlertDialog(
+                dialogInterface,
+                getRequestCode(),
+                which,
+                when (getRequestCode()) {
+                    Builder.REQUEST_CODE_DEFINE_SIZE -> {
+                        getSize()
+                    }
+                    Builder.REQUEST_CODE_SAVE_PROBLEM or Builder.REQUEST_CODE_SAVE_DRAFT_PROBLEM -> {
+                        getTitle()
+                    }
+                    else -> null
+                })
     }
 
     private fun getRequestCode(): Int = if (arguments.containsKey(Builder.ARGS_REQUEST_CODE)) arguments.getInt(Builder.ARGS_REQUEST_CODE, -1) else targetRequestCode
@@ -147,5 +159,9 @@ class MyAlertDialogFragment(val listener: IListener) : DialogFragment() {
         }
 
         return Size(width, height)
+    }
+
+    private fun getTitle(): String {
+        return (dialog.findViewById(R.id.edit_text_problem_title) as EditText).text.toString()
     }
 }

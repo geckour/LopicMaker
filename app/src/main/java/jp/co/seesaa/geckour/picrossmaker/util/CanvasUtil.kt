@@ -23,6 +23,10 @@ open class CanvasUtil(val size: Point) {
         for (i in 0..size.y - 1) (0..size.x - 1).mapTo(cells) { Cell(Point(it, i)) }
     }
 
+    fun getCells(): List<Cell> {
+        return this.cells
+    }
+
     fun getNumBlankArea(): Int {
         val l = Math.max(size.x, size.y)
         return when {
@@ -71,66 +75,66 @@ open class CanvasUtil(val size: Point) {
         if (size.x < 1 || size.y < 1) return null
 
         val bitmap = Bitmap.createBitmap(unit * (sizeBlankArea.x + size.x), unit * (sizeBlankArea.y + size.y), Bitmap.Config.ARGB_8888)
-        val c = Canvas(bitmap)
-        val p = Paint()
-        p.isAntiAlias = true
+        val canvas = Canvas(bitmap)
+        val paint = Paint()
+        paint.isAntiAlias = true
         var path: Path
 
-        p.color = Color.WHITE
-        p.style = Paint.Style.FILL
-        c.drawPaint(p)
+        paint.color = Color.WHITE
+        paint.style = Paint.Style.FILL
+        canvas.drawPaint(paint)
 
         val lineColor = Color.argb(255, 128, 128, 128)
-        p.color = lineColor
-        p.style = Paint.Style.STROKE
-        p.strokeWidth = 1f
+        paint.color = lineColor
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 1f
         for (i in 1..(sizeBlankArea.y + size.y) - 1) {
             path = Path()
-            if (i == sizeBlankArea.y) p.color = Color.BLACK
+            if (i == sizeBlankArea.y) paint.color = Color.BLACK
 
-            val height = c.height.toFloat() * i / (sizeBlankArea.y + size.y)
+            val height = canvas.height.toFloat() * i / (sizeBlankArea.y + size.y)
             path.moveTo(0f, height)
-            path.lineTo(c.width.toFloat(), height)
+            path.lineTo(canvas.width.toFloat(), height)
             path.close()
 
-            c.drawPath(path, p)
+            canvas.drawPath(path, paint)
 
-            p.color = lineColor
+            paint.color = lineColor
         }
         for (i in 1..(sizeBlankArea.x + size.x) - 1) {
             path = Path()
-            if (i == sizeBlankArea.x) p.color = Color.BLACK
+            if (i == sizeBlankArea.x) paint.color = Color.BLACK
 
-            val width = c.width.toFloat() * i / (sizeBlankArea.x + size.x)
+            val width = canvas.width.toFloat() * i / (sizeBlankArea.x + size.x)
             path.moveTo(width, 0f)
-            path.lineTo(width, c.height.toFloat())
+            path.lineTo(width, canvas.height.toFloat())
             path.close()
 
-            c.drawPath(path, p)
+            canvas.drawPath(path, paint)
 
-            p.color = lineColor
+            paint.color = lineColor
         }
 
         val blankWidth = sizeBlankArea.x * unit.toFloat()
         val blankHeight = sizeBlankArea.y * unit.toFloat()
 
-        p.style = Paint.Style.FILL
-        p.color = Color.argb(255, 96, 96, 96)
+        paint.style = Paint.Style.FILL
+        paint.color = Color.argb(255, 96, 96, 96)
         path = Path()
         path.addRect(0f, 0f, blankWidth, blankHeight, Path.Direction.CW)
-        c.drawPath(path, p)
+        canvas.drawPath(path, paint)
 
-        p.color = Color.BLACK
-        p.textSize = unit.toFloat()
+        paint.color = Color.BLACK
+        paint.textSize = unit.toFloat()
         val bounds: Rect = Rect()
-        p.getTextBounds("0", 0, "0".length, bounds)
-        val textBaseHeight = blankHeight - unit / 2 - ((p.descent() + p.ascent()) / 2)
+        paint.getTextBounds("0", 0, "0".length, bounds)
+        val textBaseHeight = blankHeight - unit / 2 - ((paint.descent() + paint.ascent()) / 2)
         for (i in 0..size.x - 1) {
-            c.drawText("0", blankWidth + (i + 0.5f) * unit - bounds.exactCenterX(), textBaseHeight, p)
+            canvas.drawText("0", blankWidth + (i + 0.5f) * unit - bounds.exactCenterX(), textBaseHeight, paint)
         }
         val textBaseWidth = blankWidth - 0.5f * unit - bounds.exactCenterX()
         for (i in 1..size.y) {
-            c.drawText("0", textBaseWidth, blankHeight + (i - 0.5f) * unit - ((p.descent() + p.ascent()) / 2), p)
+            canvas.drawText("0", textBaseWidth, blankHeight + (i - 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2), paint)
         }
 
         return bitmap
@@ -283,5 +287,26 @@ open class CanvasUtil(val size: Point) {
         }
 
         return cellsInColumn
+    }
+
+    fun getThumbnailImage(): Bitmap {
+        val u = 5f
+        val image = Bitmap.createBitmap(size.x * u.toInt(), size.y * u.toInt(), Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(image)
+        val paint = Paint()
+        paint.color = Color.BLACK
+        paint.style = Paint.Style.FILL
+        for (cell in cells) {
+            if (cell.getState()) {
+                val path = Path()
+                val left = cell.coordinate.x * u
+                val top = cell.coordinate.y * u
+                path.addRect(left, top, left + u, top + u, Path.Direction.CW)
+                path.close()
+                canvas.drawPath(path, paint)
+            }
+        }
+
+        return image
     }
 }

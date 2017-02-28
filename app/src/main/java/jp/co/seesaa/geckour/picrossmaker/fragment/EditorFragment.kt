@@ -1,32 +1,41 @@
 package jp.co.seesaa.geckour.picrossmaker.fragment
 
+import android.content.DialogInterface
 import android.databinding.DataBindingUtil
 import android.graphics.Point
 import android.graphics.PointF
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
+import android.support.design.widget.Snackbar
+import android.text.TextUtils
 import android.util.Log
 import android.util.Size
 import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
+import io.reactivex.Observable
+import io.reactivex.schedulers.Schedulers
 import jp.co.seesaa.geckour.picrossmaker.Constant
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentEditorBinding
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
+import jp.co.seesaa.geckour.picrossmaker.model.DraftProblem
+import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
+import jp.co.seesaa.geckour.picrossmaker.model.Problem
 import jp.co.seesaa.geckour.picrossmaker.util.Algorithm
+import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import timber.log.Timber
 import java.util.*
 
 class EditorFragment(listener: IListener): RxFragment() {
-    var listener: IListener? = null
+    val listener: IListener
     private var size = Point(0, 0)
-    private var binding: FragmentEditorBinding? = null
+    lateinit private var binding: FragmentEditorBinding
     private val pointPrev0 = PointF(-1f, -1f)
     private val pointPrev1 = PointF(-1f, -1f)
     private var isSolvable = true
-    private var algorythm = Algorithm(size)
+    lateinit private var algorithm: Algorithm
 
     interface IListener {
         fun onCanvasSizeError(size: Size)
@@ -54,13 +63,15 @@ class EditorFragment(listener: IListener): RxFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        setHasOptionsMenu(true)
         val size = arguments.getSize(Constant.ARGS_FRAGMENT_CANVAS_SIZE)
         this.size.set(size.width, size.height)
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_editor, container, false)
-        return binding?.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
@@ -86,8 +97,8 @@ class EditorFragment(listener: IListener): RxFragment() {
             }
         }
 
-        binding?.canvas?.setOnTouchListener { view, event -> onTouchCanvas(event) }
-        binding?.cover?.setOnTouchListener { view, event ->
+        binding.canvas.setOnTouchListener { view, event -> onTouchCanvas(event) }
+        binding.cover.setOnTouchListener { view, event ->
             run {
                 return@run if (!getMode()) {
                     when (event.action) {
@@ -114,6 +125,7 @@ class EditorFragment(listener: IListener): RxFragment() {
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
         super.onCreateOptionsMenu(menu, inflater)
 
+        menu?.clear()
         inflater?.inflate(R.menu.editor, menu)
     }
 
@@ -130,9 +142,7 @@ class EditorFragment(listener: IListener): RxFragment() {
             }
 
             R.id.action_save -> {
-                if (isSolvable) {
-                    onSaveCanvas()
-                }
+                onSaveCanvas()
                 true
             }
 
@@ -145,14 +155,14 @@ class EditorFragment(listener: IListener): RxFragment() {
     fun onScale (pointCurrent0: PointF, pointCurrent1: PointF): Boolean {
         if (pointPrev0.x < 0f) pointPrev0.set(pointCurrent0)
         if (pointPrev1.x < 0f) pointPrev1.set(pointCurrent1)
-        val scale = algorythm.getScale(algorythm.getPointDiff(pointPrev0, pointPrev1).length(), algorythm.getPointDiff(pointCurrent0, pointCurrent1).length())
-        val pointMidPrev = algorythm.getPointMid(pointPrev0, pointPrev1)
-        val pointMidCurrent = algorythm.getPointMid(pointCurrent0, pointCurrent1)
-        val diff = algorythm.getPointDiff(pointMidPrev, pointMidCurrent)
-        binding?.canvas?.translationX = binding?.canvas?.translationX?.plus(diff.x) ?: 0f
-        binding?.canvas?.translationY = binding?.canvas?.translationY?.plus(diff.y) ?: 0f
-        binding?.canvas?.scaleX = binding?.canvas?.scaleX?.times(scale) ?: 1f
-        binding?.canvas?.scaleY = binding?.canvas?.scaleY?.times(scale) ?: 1f
+        val scale = algorithm.getScale(algorithm.getPointDiff(pointPrev0, pointPrev1).length(), algorithm.getPointDiff(pointCurrent0, pointCurrent1).length())
+        val pointMidPrev = algorithm.getPointMid(pointPrev0, pointPrev1)
+        val pointMidCurrent = algorithm.getPointMid(pointCurrent0, pointCurrent1)
+        val diff = algorithm.getPointDiff(pointMidPrev, pointMidCurrent)
+        binding.canvas.translationX = binding.canvas.translationX.plus(diff.x)
+        binding.canvas.translationY = binding.canvas.translationY.plus(diff.y)
+        binding.canvas.scaleX = binding.canvas.scaleX.times(scale)
+        binding.canvas.scaleY = binding.canvas.scaleY.times(scale)
         pointPrev0.set(pointCurrent0)
         pointPrev1.set(pointCurrent1)
         return true
@@ -160,9 +170,9 @@ class EditorFragment(listener: IListener): RxFragment() {
 
     fun onDrag(pointCurrent0: PointF): Boolean {
         if (pointPrev0.x < 0f) pointPrev0.set(pointCurrent0)
-        val diff = algorythm.getPointDiff(pointPrev0, pointCurrent0)
-        binding?.canvas?.translationX = binding?.canvas?.translationX?.plus(diff.x) ?: 0f
-        binding?.canvas?.translationY = binding?.canvas?.translationY?.plus(diff.y) ?: 0f
+        val diff = algorithm.getPointDiff(pointPrev0, pointCurrent0)
+        binding.canvas.translationX = binding.canvas.translationX.plus(diff.x)
+        binding.canvas.translationY = binding.canvas.translationY.plus(diff.y)
         pointPrev0.set(pointCurrent0)
         return true
     }
@@ -174,16 +184,16 @@ class EditorFragment(listener: IListener): RxFragment() {
                 pointPrev1.set(-1f, -1f)
                 val keysHorizontal: ArrayList<List<Int>> = (0..size.y - 1)
                         .mapTo(ArrayList()) {
-                            val cellsInRow = algorythm.getCellsInRow(it) ?: return true
-                            algorythm.getKeys(cellsInRow)
+                            val cellsInRow = algorithm.getCellsInRow(it) ?: return true
+                            algorithm.getKeys(cellsInRow)
                         }
                 val keysVertical: ArrayList<List<Int>> = (0..size.x - 1)
                         .mapTo(ArrayList()) {
-                            val cellsInColumn = algorythm.getCellsInColumn(it) ?: return true
-                            algorythm.getKeys(cellsInColumn)
+                            val cellsInColumn = algorithm.getCellsInColumn(it) ?: return true
+                            algorithm.getKeys(cellsInColumn)
                         }
 
-                isSolvable = algorythm.isSolvable(keysHorizontal, keysVertical)
+                isSolvable = algorithm.isSolvable(keysHorizontal, keysVertical)
                 Log.d("onMotionActionUp", "isSolvable: $isSolvable")
             }
 
@@ -191,24 +201,24 @@ class EditorFragment(listener: IListener): RxFragment() {
                 if (event.action == MotionEvent.ACTION_MOVE) isSolvable = false
 
                 val pointCurrent = PointF(event.x, event.y)
-                val coordCurrent = algorythm.getCoordinateFromTouchPoint(
-                        binding?.canvas,
+                val coordCurrent = algorithm.getCoordinateFromTouchPoint(
+                        binding.canvas,
                         pointCurrent) ?: return true
-                val coordPrev = algorythm.getCoordinateFromTouchPoint(
-                        binding?.canvas,
+                val coordPrev = algorithm.getCoordinateFromTouchPoint(
+                        binding.canvas,
                         pointPrev0) ?: Point(-1, -1)
                 if (!coordCurrent.equals(coordPrev.x, coordPrev.y)) {
-                    val cell = algorythm.getCellByCoordinate(coordCurrent) ?: return true
+                    val cell = algorithm.getCellByCoordinate(coordCurrent) ?: return true
 
                     if (event.action == MotionEvent.ACTION_MOVE) {
-                        val cellPrev = algorythm.getCellByCoordinate(coordPrev) ?: return true
+                        val cellPrev = algorithm.getCellByCoordinate(coordPrev) ?: return true
                         cell.state = cellPrev.state
                     } else {
                         cell.state = !cell.getState()
                     }
 
-                    val bitmap = algorythm.onEditCanvasImage((binding?.canvas?.drawable as BitmapDrawable).bitmap, cell, true)
-                    binding?.canvas?.setImageBitmap(bitmap)
+                    val bitmap = algorithm.onEditCanvasImage((binding.canvas.drawable as BitmapDrawable).bitmap, cell, true)
+                    binding.canvas.setImageBitmap(bitmap)
                 }
                 pointPrev0.set(pointCurrent)
             }
@@ -224,11 +234,108 @@ class EditorFragment(listener: IListener): RxFragment() {
     }
 
     fun onRefresh() {
-        this.algorythm = Algorithm(size)
-        binding?.canvas?.setImageBitmap(algorythm.createCanvasImage())
+        this.algorithm = Algorithm(size)
+        binding.canvas.setImageBitmap(algorithm.createCanvasImage())
     }
 
     fun onSaveCanvas() {
+        val fragment = MyAlertDialogFragment.Builder(object: MyAlertDialogFragment.IListener {
+            override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: Int, resultCode: Int, result: Any?) {
+                when (resultCode) {
+                    DialogInterface.BUTTON_POSITIVE -> {
+                        onPositive(requestCode, result)
+                    }
+                }
+            }
 
+            fun onPositive(requestCode: Int, result: Any?) {
+                when (requestCode) {
+                    MyAlertDialogFragment.Builder.REQUEST_CODE_SAVE_PROBLEM -> {
+                        if (result != null && result is String && !TextUtils.isEmpty(result)) {
+                            OrmaProvider.db.prepareInsertIntoProblem()
+                                    .executeAsSingle { getProblem(result) }
+                                    .subscribeOn(Schedulers.newThread())
+                                    .compose(this@EditorFragment.bindToLifecycle<Long>())
+                                    .subscribe({ id -> run {
+                                        Snackbar.make(activity.findViewById(R.id.cover),
+                                                R.string.editor_fragment_message_complete_save,
+                                                Snackbar.LENGTH_SHORT).show()
+                                    } }, { throwable -> run {
+                                        throwable.printStackTrace()
+                                        Snackbar.make(activity.findViewById(R.id.cover),
+                                                R.string.editor_fragment_error_failure_save,
+                                                Snackbar.LENGTH_SHORT).show()
+                                    } })
+                        } else {
+                            showTitleErrorSnackbar()
+                        }
+                    }
+
+                    MyAlertDialogFragment.Builder.REQUEST_CODE_SAVE_DRAFT_PROBLEM -> {
+                        if (result != null && result is String && !TextUtils.isEmpty(result)) {
+                            Observable.just(getDraftProblem(result))
+                                    .subscribeOn(Schedulers.newThread())
+                                    .compose(this@EditorFragment.bindToLifecycle<DraftProblem>())
+                                    .subscribe(
+                                            { draftProblem -> OrmaProvider.db.insertIntoDraftProblem(draftProblem) },
+                                            { throwable -> run {
+                                                throwable.printStackTrace()
+                                                Snackbar.make(activity.findViewById(R.id.cover),
+                                                        R.string.editor_fragment_error_failure_save,
+                                                        Snackbar.LENGTH_SHORT).show()
+                                            } },
+                                            { Snackbar.make(activity.findViewById(R.id.cover),
+                                                        R.string.editor_fragment_message_complete_save,
+                                                        Snackbar.LENGTH_SHORT).show() })
+                        } else {
+                            showTitleErrorSnackbar()
+                        }
+                    }
+                }
+            }
+
+            fun showTitleErrorSnackbar() {
+                Snackbar.make(activity.findViewById(R.id.cover),
+                        R.string.editor_fragment_error_invalid_title,
+                        Snackbar.LENGTH_SHORT).show()
+            }
+        }, this)
+                .setLayout(R.layout.dialog_define_title)
+                .setTitle(getString(if (isSolvable) R.string.dialog_alert_title_save_problem else R.string.dialog_alert_title_save_draft_problem))
+                .setMessage(getString(if (isSolvable) R.string.dialog_alert_message_save_problem else R.string.dialog_alert_message_save_draft_problem))
+                .setRequestCode(if (isSolvable) MyAlertDialogFragment.Builder.REQUEST_CODE_SAVE_PROBLEM else MyAlertDialogFragment.Builder.REQUEST_CODE_SAVE_DRAFT_PROBLEM)
+                .setCancelable(true)
+                .commit()
+
+        fragment.show(fragmentManager, if (isSolvable) MyAlertDialogFragment.Builder.TAG_SAVE_PROBLEM else MyAlertDialogFragment.Builder.TAG_SAVE_DRAFT_PROBLEM)
+    }
+
+    fun getProblem(title: String): Problem {
+        val thumb = algorithm.getThumbnailImage()
+        val keysInRow: ArrayList<List<Int>> = ArrayList()
+        (0..algorithm.size.y - 1).forEach {
+            keysInRow.add(algorithm.getKeys(algorithm.getCellsInRow(it) ?: return@forEach))
+        }
+        val keysInColumn: ArrayList<List<Int>> = ArrayList()
+        (0..algorithm.size.x - 1).forEach {
+            keysInColumn.add(algorithm.getKeys(algorithm.getCellsInColumn(it) ?: return@forEach))
+        }
+
+        return Problem(-1L, title, Problem.Companion.KeysCluster(*(keysInRow.toTypedArray())), Problem.Companion.KeysCluster(*(keysInColumn.toTypedArray())), thumb)
+    }
+
+    fun getDraftProblem(title: String): DraftProblem {
+        val thumb = algorithm.getThumbnailImage()
+        val keysInRow: ArrayList<List<Int>> = ArrayList()
+        (0..algorithm.size.y - 1).forEach {
+            keysInRow.add(algorithm.getKeys(algorithm.getCellsInRow(it) ?: return@forEach))
+        }
+        val keysInColumn: ArrayList<List<Int>> = ArrayList()
+        (0..algorithm.size.x - 1).forEach {
+            keysInColumn.add(algorithm.getKeys(algorithm.getCellsInColumn(it) ?: return@forEach))
+        }
+        val cells = algorithm.getCells()
+
+        return DraftProblem(-1L, title, Problem.Companion.KeysCluster(*(keysInRow.toTypedArray())), Problem.Companion.KeysCluster(*(keysInColumn.toTypedArray())), thumb, Cell.Companion.Catalog(cells))
     }
 }

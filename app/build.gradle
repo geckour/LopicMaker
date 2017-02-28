@@ -35,28 +35,30 @@ dependencies {
         exclude group: 'com.google.code.findbugs'
     })
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:25.1.1'
-    compile 'com.android.support:support-v4:25.1.1'
-    compile 'com.android.support:design:25.1.1'
-    compile 'com.android.support:recyclerview-v7:25.1.1'
-    compile 'com.android.support.constraint:constraint-layout:1.0.0-beta5'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+    kapt "com.github.gfx.android.orma:orma-processor:$orma_version"
+    compile "com.github.gfx.android.orma:orma:$orma_version"
 
     kapt 'com.android.databinding:compiler:2.2.3'
 
-    compile 'io.reactivex:rxandroid:1.2.1'
+    compile "com.android.support:appcompat-v7:$android_support_version"
+    compile "com.android.support:support-v4:$android_support_version"
+    compile "com.android.support:design:$android_support_version"
+    compile "com.android.support:recyclerview-v7:$android_support_version"
+    compile 'com.android.support.constraint:constraint-layout:1.0.0-beta5'
+
     compile "com.trello.rxlifecycle2:rxlifecycle:$rxLifecycle_version"
     compile "com.trello.rxlifecycle2:rxlifecycle-components:$rxLifecycle_version"
     compile "com.trello.rxlifecycle2:rxlifecycle-kotlin:$rxLifecycle_version"
     compile 'io.reactivex:rxkotlin:0.60.0'
+
+    compile 'com.google.code.gson:gson:2.8.0'
+
     compile 'com.jakewharton.timber:timber:4.5.1'
 
     compile group: 'org.sat4j', name: 'org.sat4j.core', version: '2.3.1'
     // TODO: Ankoの導入
-}
-
-kapt {
-    generateStubs = true
 }
 
 repositories {

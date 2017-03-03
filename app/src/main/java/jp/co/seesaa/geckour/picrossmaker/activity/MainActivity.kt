@@ -20,6 +20,8 @@ import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import timber.log.Timber
 
 class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
+    lateinit var alertDialogListener: MyAlertDialogFragment.IListener
+    lateinit var editorFragmentListener: EditorFragment.IListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +37,9 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
 
         val navigationView = findViewById(R.id.nav_view) as NavigationView
         navigationView.setNavigationItemSelectedListener(this)
+
+        this.alertDialogListener = createAlertDialogListenerForEditor()
+        this.editorFragmentListener = createEditorFragmentListener()
 
         if (savedInstanceState == null) {
             val fragment = ProblemsFragment.newInstance()
@@ -86,13 +91,7 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
                         when (requestCode) {
                             MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE -> {
                                 if (result != null && result is Size) {
-                                    val fragment = EditorFragment.newInstance(result, object : EditorFragment.IListener {
-                                        override fun onCanvasSizeError(size: Size) {
-                                            Snackbar.make(findViewById(R.id.container),
-                                                    R.string.problem_fragment_error_invalid_size,
-                                                    Snackbar.LENGTH_SHORT).show()
-                                        }
-                                    })
+                                    val fragment = EditorFragment.newInstance(result, editorFragmentListener)
                                     if (fragment != null) {
                                         fragmentManager.beginTransaction()
                                                 .replace(R.id.container, fragment)
@@ -127,5 +126,39 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
 
         (findViewById(R.id.drawer_layout) as DrawerLayout).closeDrawer(GravityCompat.START)
         return true
+    }
+
+    fun createAlertDialogListenerForEditor() = object: MyAlertDialogFragment.IListener {
+        override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: Int, resultCode: Int, result: Any?) {
+            when (resultCode) {
+                DialogInterface.BUTTON_POSITIVE ->
+                    onPositive(requestCode, result)
+            }
+            dialogInterface.dismiss()
+        }
+
+        fun onPositive(requestCode: Int, result: Any?) {
+            when (requestCode) {
+                MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE -> {
+                    if (result != null && result is Size) {
+                        val fragment = EditorFragment.newInstance(result, editorFragmentListener)
+                        if (fragment != null) {
+                            fragmentManager.beginTransaction()
+                                    .replace(R.id.container, fragment)
+                                    .addToBackStack(null)
+                                    .commit()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun createEditorFragmentListener() = object : EditorFragment.IListener {
+        override fun onCanvasSizeError(size: Size) {
+            Snackbar
+                    .make(findViewById(R.id.cover), R.string.problem_fragment_error_invalid_size, Snackbar.LENGTH_SHORT)
+                    .show()
+        }
     }
 }

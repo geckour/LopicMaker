@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.DialogDefineSizeBinding
+import jp.co.seesaa.geckour.picrossmaker.fragment.EditorFragment
 import timber.log.Timber
 
 class MyAlertDialogFragment(val listener: IListener) : DialogFragment() {

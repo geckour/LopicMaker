@@ -64,37 +64,7 @@ class ProblemsFragment: RxFragment() {
         fab.setOnClickListener {
             view ->
             run {
-                val fragment = MyAlertDialogFragment.Builder(object: MyAlertDialogFragment.IListener {
-                    override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: Int, resultCode: Int, result: Any?) {
-                        when (resultCode) {
-                            DialogInterface.BUTTON_POSITIVE ->
-                                onPositive(requestCode, result)
-                        }
-                        dialogInterface.dismiss()
-                    }
-
-                    fun onPositive(requestCode: Int, result: Any?) {
-                        when (requestCode) {
-                            MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE -> {
-                                if (result != null && result is Size) {
-                                    val fragment = EditorFragment.newInstance(result, object : EditorFragment.IListener {
-                                        override fun onCanvasSizeError(size: Size) {
-                                            Snackbar
-                                                    .make(activity.findViewById(R.id.cover), R.string.problem_fragment_error_invalid_size, Snackbar.LENGTH_SHORT)
-                                                    .show()
-                                        }
-                                    })
-                                    if (fragment != null) {
-                                        fragmentManager.beginTransaction()
-                                                .replace(R.id.container, fragment)
-                                                .addToBackStack(null)
-                                                .commit()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }, this)
+                val fragment = MyAlertDialogFragment.Builder((activity as MainActivity).createAlertDialogListenerForEditor(), this)
                         .setTitle(getString(R.string.dialog_alert_title_size_define))
                         .setLayout(R.layout.dialog_define_size)
                         .setRequestCode(MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE)

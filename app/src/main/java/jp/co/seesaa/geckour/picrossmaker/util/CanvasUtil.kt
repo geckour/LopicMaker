@@ -1,6 +1,7 @@
 package jp.co.seesaa.geckour.picrossmaker.util
 
 import android.graphics.*
+import android.os.Parcelable
 import android.util.Log
 import android.util.Size
 import android.widget.ImageView
@@ -9,13 +10,17 @@ import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import java.util.*
 
 open class CanvasUtil(val size: Point) {
-    protected val cells: ArrayList<Cell> = ArrayList()
+    val cells: ArrayList<Cell> = ArrayList()
     private val sizeBlankArea = Point(0, 0)
 
     init {
         val blankArea = getNumBlankArea()
         sizeBlankArea.set(blankArea, blankArea)
         initCells()
+    }
+
+    companion object {
+        val BUNDLE_NAME_CELLS = "cells"
     }
 
     fun initCells() {
@@ -37,10 +42,6 @@ open class CanvasUtil(val size: Point) {
                 .forEach { bitmap = onEditCanvasImage(bitmap, it, true) }
 
         return bitmap
-    }
-
-    fun getCells(): List<Cell> {
-        return this.cells
     }
 
     fun getNumBlankArea(): Int {

@@ -5,7 +5,6 @@ import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
 import android.support.design.widget.Snackbar
-import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
@@ -13,7 +12,6 @@ import android.util.Log
 import android.util.Size
 import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
-import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import jp.co.seesaa.geckour.picrossmaker.R
@@ -23,9 +21,6 @@ import jp.co.seesaa.geckour.picrossmaker.fragment.adapter.DraftProblemsListAdapt
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 
-/**
- * Created by geckour on 2017/02/28.
- */
 class DraftProblemsFragment: RxFragment() {
     lateinit private var binding: FragmentProblemsBinding
     lateinit private var adapter: DraftProblemsListAdapter
@@ -68,37 +63,7 @@ class DraftProblemsFragment: RxFragment() {
         fab.setOnClickListener {
             view ->
             run {
-                val fragment = MyAlertDialogFragment.Builder(object: MyAlertDialogFragment.IListener {
-                    override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: Int, resultCode: Int, result: Any?) {
-                        when (resultCode) {
-                            DialogInterface.BUTTON_POSITIVE ->
-                                onPositive(requestCode, result)
-                        }
-                        dialogInterface.dismiss()
-                    }
-
-                    fun onPositive(requestCode: Int, result: Any?) {
-                        when (requestCode) {
-                            MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE -> {
-                                if (result != null && result is Size) {
-                                    val fragment = EditorFragment.newInstance(result, object : EditorFragment.IListener {
-                                        override fun onCanvasSizeError(size: Size) {
-                                            Snackbar
-                                                    .make(activity.findViewById(R.id.cover), R.string.problem_fragment_error_invalid_size, Snackbar.LENGTH_SHORT)
-                                                    .show()
-                                        }
-                                    })
-                                    if (fragment != null) {
-                                        fragmentManager.beginTransaction()
-                                                .replace(R.id.container, fragment)
-                                                .addToBackStack(null)
-                                                .commit()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }, this)
+                val fragment = MyAlertDialogFragment.Builder((activity as MainActivity).createAlertDialogListenerForEditor(), this)
                         .setTitle(getString(R.string.dialog_alert_title_size_define))
                         .setLayout(R.layout.dialog_define_size)
                         .setRequestCode(MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE)

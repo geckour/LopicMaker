@@ -1,17 +1,21 @@
 package jp.co.seesaa.geckour.picrossmaker.fragment
 
+import android.content.Context
 import android.content.DialogInterface
 import android.databinding.DataBindingUtil
 import android.graphics.Point
 import android.graphics.PointF
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.os.Parcelable
 import android.support.design.widget.FloatingActionButton
 import android.support.design.widget.Snackbar
 import android.text.TextUtils
 import android.util.Log
 import android.util.Size
 import android.view.*
+import com.github.yamamotoj.pikkel.Pikkel
+import com.github.yamamotoj.pikkel.PikkelDelegate
 import com.trello.rxlifecycle2.components.RxFragment
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
@@ -24,25 +28,26 @@ import jp.co.seesaa.geckour.picrossmaker.model.DraftProblem
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
 import jp.co.seesaa.geckour.picrossmaker.model.Problem
 import jp.co.seesaa.geckour.picrossmaker.util.Algorithm
+import jp.co.seesaa.geckour.picrossmaker.util.CanvasUtil
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import timber.log.Timber
 import java.util.*
 
-class EditorFragment(listener: IListener): RxFragment() {
-    val listener: IListener
-    private val size = Point(0, 0)
-    private var draftId = -1L
+class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
+    lateinit var listener: IListener
+    private val size by state(Point(0, 0))
+    private var draftId by state(-1L)
     lateinit private var binding: FragmentEditorBinding
     private val pointPrev0 = PointF(-1f, -1f)
     private val pointPrev1 = PointF(-1f, -1f)
-    private var isSolvable = true
+    private var isSolvable by state(true)
     lateinit private var algorithm: Algorithm
 
     interface IListener {
         fun onCanvasSizeError(size: Size)
     }
 
-    init {
+    constructor(listener: IListener): this() {
         this.listener = listener
     }
 
@@ -93,11 +98,15 @@ class EditorFragment(listener: IListener): RxFragment() {
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        onRefresh()
+        onRefresh(savedInstanceState)
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+
+        if (activity is MainActivity) {
+            this.listener = (activity as MainActivity).editorFragmentListener
+        }
 
         (activity as MainActivity).supportActionBar?.setTitle(R.string.action_bar_title_edit)
 
@@ -166,6 +175,12 @@ class EditorFragment(listener: IListener): RxFragment() {
                 return super.onOptionsItemSelected(item)
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle?) {
+        super.onSaveInstanceState(outState)
+        outState?.putParcelableArrayList(CanvasUtil.BUNDLE_NAME_CELLS, algorithm.cells)
+        saveInstanceState(outState)
     }
 
     fun onScale (pointCurrent0: PointF, pointCurrent1: PointF): Boolean {
@@ -250,7 +265,7 @@ class EditorFragment(listener: IListener): RxFragment() {
         return (activity.findViewById(R.id.fab) as FloatingActionButton).tag as Boolean
     }
 
-    fun onRefresh() {
+    fun onRefresh(savedInstanceState: Bundle?) {
         if (this.draftId < 0) {
             this.algorithm = Algorithm(size)
             binding.canvas.setImageBitmap(algorithm.createCanvasImage())
@@ -258,7 +273,9 @@ class EditorFragment(listener: IListener): RxFragment() {
             val draftProblem = OrmaProvider.db.selectFromDraftProblem().idEq(this.draftId).value()
             this.size.set(draftProblem.keysVertical.keys.size, draftProblem.keysHorizontal.keys.size)
             this.algorithm = Algorithm(size)
-            val bitmap = this.algorithm.setCells(draftProblem.catalog.cells)
+            val bitmap = this.algorithm.setCells(
+                    if (savedInstanceState == null) draftProblem.catalog.cells
+                    else savedInstanceState.getParcelableArrayList(CanvasUtil.BUNDLE_NAME_CELLS))
             binding.canvas.setImageBitmap(bitmap)
         }
     }
@@ -359,8 +376,7 @@ class EditorFragment(listener: IListener): RxFragment() {
         (0..algorithm.size.x - 1).forEach {
             keysInColumn.add(algorithm.getKeys(algorithm.getCellsInColumn(it) ?: return@forEach))
         }
-        val cells = algorithm.getCells()
 
-        return DraftProblem(-1L, title, Problem.Companion.KeysCluster(*(keysInRow.toTypedArray())), Problem.Companion.KeysCluster(*(keysInColumn.toTypedArray())), thumb, Cell.Companion.Catalog(cells))
+        return DraftProblem(-1L, title, Problem.Companion.KeysCluster(*(keysInRow.toTypedArray())), Problem.Companion.KeysCluster(*(keysInColumn.toTypedArray())), thumb, Cell.Companion.Catalog(algorithm.cells))
     }
 }

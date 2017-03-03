@@ -1,6 +1,7 @@
 package jp.co.seesaa.geckour.picrossmaker.util
 
 import android.graphics.Point
+import android.util.Log
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import jp.co.seesaa.geckour.picrossmaker.model.KeyStates
 import org.sat4j.core.VecInt
@@ -8,9 +9,6 @@ import org.sat4j.minisat.SolverFactory
 import org.sat4j.specs.IProblem
 import java.util.*
 
-/**
- * Created by geckour on 2017/02/22.
- */
 class Algorithm(size: Point): CanvasUtil(size) {
     private val solver = SolverFactory.newDefault()
 
@@ -25,23 +23,25 @@ class Algorithm(size: Point): CanvasUtil(size) {
 
         // row
         for (i in 0..size.y - 1) {
-            val keysStateRow = KeyStates(size.x, keysHorizontal[i])
+            val keyStatesRow = KeyStates(size.x, keysHorizontal[i])
 
-            if (!tseytinEncode1(keysStateRow)) return false
-            if (!tseytinEncode2(keysStateRow)) return false
-            if (!tseytinEncode3(keysStateRow, i, true)) return false
+            if (!tseytinEncode1(keyStatesRow)) return false
+            if (!tseytinEncode2(keyStatesRow)) return false
+            if (!tseytinEncode3(keyStatesRow, i, true)) return false
         }
 
         // column
         for (i in 0..size.x - 1) {
-            val keysStateColumn = KeyStates(size.y, keysVertical[i])
+            val keyStatesColumn = KeyStates(size.y, keysVertical[i])
 
-            if (!tseytinEncode1(keysStateColumn)) return false
-            if (!tseytinEncode2(keysStateColumn)) return false
-            if (!tseytinEncode3(keysStateColumn, i, false)) return false
+            if (!tseytinEncode1(keyStatesColumn)) return false
+            if (!tseytinEncode2(keyStatesColumn)) return false
+            if (!tseytinEncode3(keyStatesColumn, i, false)) return false
         }
 
-        return (solver as IProblem).isSatisfiable
+        val isSolvable = (solver as IProblem).isSatisfiable
+        Log.d("isSolvable", "$isSolvable")
+        return isSolvable
     }
 
     fun tseytinEncode1(keyStates: KeyStates): Boolean {
@@ -55,12 +55,12 @@ class Algorithm(size: Point): CanvasUtil(size) {
             solver.addClause(v)
         }
 
-        if (keyStates.slideMargin > 0) {
-            for (i in 0..keyStates.actualKeys.size - 1) {
-                for (j in 0..keyStates.slideMargin) {
+        for (i in 0..keyStates.slideMargin) {
+            for (j in 0..keyStates.actualKeys.size - 1) {
+                for (k in i + 1..keyStates.slideMargin) {
                     val v = VecInt()
-                    v.push(-(keyStates.getCnfVar(i, j % (keyStates.slideMargin + 1)) ?: return false))
-                    v.push(-(keyStates.getCnfVar(i, (j + 1) % (keyStates.slideMargin + 1)) ?: return false))
+                    v.push(-(keyStates.getCnfVar(j, k) ?: return false))
+                    v.push(-(keyStates.getCnfVar(j, i) ?: return false))
 
                     solver.addClause(v)
                 }
@@ -90,19 +90,20 @@ class Algorithm(size: Point): CanvasUtil(size) {
     fun tseytinEncode3(keyStates: KeyStates, index: Int, isRow: Boolean): Boolean {
         for (i in 0..keyStates.lineSize - 1) {
             val coordinate = if (isRow) Point(i, index) else Point(index, i)
-            val v = VecInt()
             val cellIndex = getCellIndexByCoordinate(coordinate) + 1
             if (cellIndex < 1) return false
-            v.push(-cellIndex)
 
             for ((j, key) in keyStates.actualKeys.withIndex()) {
                 for (k in 0..keyStates.slideMargin) {
                     (0..key - 1)
                             .filter { i == (keyStates.getPreKeysSum(j) ?: return false) + j + k + it }
-                            .forEach { v.push(keyStates.getCnfVar(j, k) ?: return false) }
+                            .forEach {
+                                val v = VecInt()
+                                v.push(-cellIndex)
+                                v.push(keyStates.getCnfVar(j, k) ?: return false)
+                                solver.addClause(v)
+                            }
                 }
-
-                solver.addClause(v)
             }
         }
 
@@ -117,7 +118,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
                         if (i == (keyStates.getPreKeysSum(j) ?: return false) + j + k + l) {
                             val v = VecInt()
                             v.push(cellIndex)
-                            v.push(keyStates.getCnfVar(j, k) ?: return false)
+                            v.push(-(keyStates.getCnfVar(j, k) ?: return false))
 
                             solver.addClause(v)
                         }

@@ -9,30 +9,30 @@ class KeyStates(val lineSize: Int, val keys: List<Int>) {
     }
 
     val actualKeys = keys.filter { it > 0 }
-    val preKeysSumList: ArrayList<Int> = ArrayList()
-    var slideMargin = 0
-    var cnfVars: ArrayList<Int> = ArrayList()
+    private val preKeysSumList: ArrayList<Int> = ArrayList()
+    val slideMargin: Int
+    private val cnfVars: ArrayList<Int> = ArrayList()
 
     init {
         var keysSum = 0
         for (key in actualKeys) {
-            preKeysSumList.add(keysSum)
+            this.preKeysSumList.add(keysSum)
             keysSum += key
         }
 
-        slideMargin = lineSize - keysSum - keys.size + 1
+        this.slideMargin = this.lineSize - keysSum - this.keys.size + 1
 
-        (0..(slideMargin + 1) * actualKeys.size - 1).forEach {
-            cnfVars.add(++varCount)
+        (0..(this.slideMargin + 1) * this.actualKeys.size - 1).forEach {
+            this.cnfVars.add(++varCount)
         }
     }
 
     fun getCnfVar(keyIndex: Int, slideIndex: Int): Int? {
         val index = keyIndex * (slideMargin + 1) + slideIndex
-        return if (index < cnfVars.size) cnfVars[index] else null
+        return if (-1 < index && index < cnfVars.size) cnfVars[index] else null
     }
 
     fun getPreKeysSum(keyIndex: Int): Int? {
-        return if (keyIndex < preKeysSumList.size) preKeysSumList[keyIndex] else null
+        return if (-1 < keyIndex && keyIndex < preKeysSumList.size) preKeysSumList[keyIndex] else null
     }
 }

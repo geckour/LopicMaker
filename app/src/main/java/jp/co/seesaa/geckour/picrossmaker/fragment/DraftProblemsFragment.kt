@@ -1,6 +1,5 @@
 package jp.co.seesaa.geckour.picrossmaker.fragment
 
-import android.content.DialogInterface
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
@@ -85,6 +84,8 @@ class DraftProblemsFragment: RxFragment() {
             fetchDraftProblems()
             binding.swipeRefresh.isRefreshing = false
         }
+
+        binding.textIndicateEmpty.setText(R.string.problem_fragment_message_empty_draft)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -132,6 +133,14 @@ class DraftProblemsFragment: RxFragment() {
 
             override fun onLongClickDraftProblemItem(position: Int): Boolean {
                 return true
+            }
+
+            override fun onBind() {
+                binding.textIndicateEmpty.visibility = View.GONE
+            }
+
+            override fun onAllUnbind() {
+                binding.textIndicateEmpty.visibility = View.VISIBLE
             }
         })
     }

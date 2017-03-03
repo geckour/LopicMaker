@@ -4,6 +4,7 @@ import android.app.*
 import android.content.DialogInterface
 import android.databinding.DataBindingUtil
 import android.os.Bundle
+import android.util.Log
 import android.util.Size
 import android.view.LayoutInflater
 import android.view.View
@@ -138,7 +139,7 @@ class MyAlertDialogFragment(val listener: IListener) : DialogFragment() {
                     Builder.REQUEST_CODE_DEFINE_SIZE -> {
                         getSize()
                     }
-                    Builder.REQUEST_CODE_SAVE_PROBLEM or Builder.REQUEST_CODE_SAVE_DRAFT_PROBLEM -> {
+                    Builder.REQUEST_CODE_SAVE_PROBLEM, Builder.REQUEST_CODE_SAVE_DRAFT_PROBLEM -> {
                         getTitle()
                     }
                     else -> null

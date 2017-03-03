@@ -86,6 +86,8 @@ class ProblemsFragment: RxFragment() {
             fetchProblems()
             binding.swipeRefresh.isRefreshing = false
         }
+
+        binding.textIndicateEmpty.setText(R.string.problem_fragment_message_empty)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -132,6 +134,14 @@ class ProblemsFragment: RxFragment() {
 
             override fun onLongClickProblemItem(position: Int): Boolean {
                 return true
+            }
+
+            override fun onBind() {
+                binding.textIndicateEmpty.visibility = View.GONE
+            }
+
+            override fun onAllUnbind() {
+                binding.textIndicateEmpty.visibility = View.VISIBLE
             }
         })
     }

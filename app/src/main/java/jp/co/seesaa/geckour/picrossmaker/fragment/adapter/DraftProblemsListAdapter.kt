@@ -17,12 +17,14 @@ class DraftProblemsListAdapter(val listener: DraftProblemsListAdapter.IListener)
         val size = draftProblems.size
         draftProblems.clear()
         notifyItemRangeRemoved(0, size)
+        onChangeProblems()
     }
 
     fun addDraftProblems(draftProblems: List<DraftProblem>) {
         val size = this.draftProblems.size
         this.draftProblems.addAll(draftProblems)
         notifyItemRangeInserted(size - 1, draftProblems.size)
+        onChangeProblems()
     }
 
     fun getDraftProblemByIndex(position: Int): DraftProblem? {
@@ -34,6 +36,7 @@ class DraftProblemsListAdapter(val listener: DraftProblemsListAdapter.IListener)
             draftProblems.removeAt(it)
             notifyItemRemoved(it)
         }
+        onChangeProblems()
     }
 
     fun removeDraftProblemsByObject(vararg draftProblems: DraftProblem) {
@@ -42,6 +45,12 @@ class DraftProblemsListAdapter(val listener: DraftProblemsListAdapter.IListener)
             val index = draftProblems.indexOf(it)
             notifyItemRemoved(index)
         }
+        onChangeProblems()
+    }
+
+    fun onChangeProblems() {
+        if (draftProblems.size > 0) listener.onBind()
+        else listener.onAllUnbind()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
@@ -79,5 +88,7 @@ class DraftProblemsListAdapter(val listener: DraftProblemsListAdapter.IListener)
     interface IListener {
         fun onClickDraftProblemItem(position: Int)
         fun onLongClickDraftProblemItem(position: Int): Boolean
+        fun onBind()
+        fun onAllUnbind()
     }
 }

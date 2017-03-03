@@ -24,8 +24,7 @@ open class CanvasUtil(val size: Point) {
     }
 
     fun initCells() {
-        cells.clear()
-        for (i in 0..size.y - 1) (0..size.x - 1).mapTo(cells) { Cell(Point(it, i)) }
+        initCells(this.cells)
     }
 
     fun initCells(cells: ArrayList<Cell>) {
@@ -283,7 +282,8 @@ open class CanvasUtil(val size: Point) {
     }
 
     fun getCellIndexByCoordinate(coordinate: Point): Int {
-        return cells.indexOfFirst { it.coordinate.equals(coordinate.x, coordinate.y) }
+        //return cells.indexOfFirst { it.coordinate.equals(coordinate.x, coordinate.y) }
+        return if (-1 < coordinate.x && coordinate.x < size.x && -1 < coordinate.y && coordinate.y < size.y) coordinate.x + coordinate.y * size.x else -1
     }
 
     fun getCellsInColumn(index: Int): List<Cell>? {

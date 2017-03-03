@@ -3,6 +3,7 @@
     <string name="app_description">make your original Picross</string>
 
     <string name="action_bar_title_edit">編集</string>
+    <string name="action_bar_title_edit_with_title">編集 - %1$s</string>
     <string name="action_bar_title_draft">下書き</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
@@ -28,6 +29,8 @@
     <string name="dialog_alert_message_save_problem">問題を保存しますか？</string>
     <string name="dialog_alert_message_save_draft_problem">この問題は解くことができません。下書きとして保存しますか？</string>
 
+    <string name="problem_fragment_message_empty">まだ問題が作成されていません。\n右下の+ボタンから作成してください</string>
+    <string name="problem_fragment_message_empty_draft">まだ下書きが作成されていません。\n右下の+ボタンから作成してください</string>
     <string name="problem_fragment_error_invalid_size">有効なサイズを指定してください</string>
     <string name="problem_fragment_item_point">%1$d x %2$d</string>
     <string name="problem_fragment_error_failure_delete">削除に失敗しました</string>

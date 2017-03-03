@@ -17,12 +17,14 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
         val size = problems.size
         problems.clear()
         notifyItemRangeRemoved(0, size)
+        onChangeProblems()
     }
 
     fun addProblems(problems: List<Problem>) {
         val size = this.problems.size
         this.problems.addAll(problems)
         notifyItemRangeInserted(size - 1, problems.size)
+        onChangeProblems()
     }
 
     fun getProblemByIndex(position: Int): Problem? {
@@ -34,6 +36,7 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
             problems.removeAt(it)
             notifyItemRemoved(it)
         }
+        onChangeProblems()
     }
 
     fun removeProblemsByObject(vararg problems: Problem) {
@@ -42,6 +45,12 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
             val index = problems.indexOf(it)
             notifyItemRemoved(index)
         }
+        onChangeProblems()
+    }
+
+    fun onChangeProblems() {
+        if (problems.size > 0) listener.onBind()
+        else listener.onAllUnbind()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
@@ -80,5 +89,7 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
     interface IListener {
         fun onClickProblemItem(position: Int)
         fun onLongClickProblemItem(position: Int): Boolean
+        fun onBind()
+        fun onAllUnbind()
     }
 }

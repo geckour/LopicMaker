@@ -1,13 +1,11 @@
 package jp.co.seesaa.geckour.picrossmaker.fragment
 
-import android.content.Context
 import android.content.DialogInterface
 import android.databinding.DataBindingUtil
 import android.graphics.Point
 import android.graphics.PointF
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
-import android.os.Parcelable
 import android.support.design.widget.FloatingActionButton
 import android.support.design.widget.Snackbar
 import android.text.TextUtils
@@ -17,7 +15,7 @@ import android.view.*
 import com.github.yamamotoj.pikkel.Pikkel
 import com.github.yamamotoj.pikkel.PikkelDelegate
 import com.trello.rxlifecycle2.components.RxFragment
-import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import jp.co.seesaa.geckour.picrossmaker.Constant
 import jp.co.seesaa.geckour.picrossmaker.R
@@ -108,7 +106,12 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
             this.listener = (activity as MainActivity).editorFragmentListener
         }
 
-        (activity as MainActivity).supportActionBar?.setTitle(R.string.action_bar_title_edit)
+        if (draftId > -1) {
+            val title = OrmaProvider.db.selectFromDraftProblem().idEq(draftId).value().title
+            (activity as MainActivity).supportActionBar?.setTitle(getString(R.string.action_bar_title_edit_with_title, title))
+        } else {
+            (activity as MainActivity).supportActionBar?.setTitle(R.string.action_bar_title_edit)
+        }
 
         val fab = activity.findViewById(R.id.fab) as FloatingActionButton
         fab.tag = true
@@ -225,7 +228,6 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
                         }
 
                 isSolvable = algorithm.isSolvable(keysHorizontal, keysVertical)
-                Log.d("onMotionActionUp", "isSolvable: $isSolvable")
             }
 
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_MOVE -> {
@@ -294,9 +296,10 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
                 when (requestCode) {
                     MyAlertDialogFragment.Builder.REQUEST_CODE_SAVE_PROBLEM -> {
                         if (result != null && result is String && !TextUtils.isEmpty(result)) {
-                            OrmaProvider.db.prepareInsertIntoProblem()
-                                    .executeAsSingle { createProblem(result) }
+                            OrmaProvider.db.prepareInsertIntoProblemAsSingle()
                                     .subscribeOn(Schedulers.newThread())
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .map { inserter -> inserter.execute { createProblem(result) } }
                                     .compose(this@EditorFragment.bindToLifecycle<Long>())
                                     .subscribe({ id -> run {
                                         Snackbar.make(activity.findViewById(R.id.cover),
@@ -315,20 +318,21 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
 
                     MyAlertDialogFragment.Builder.REQUEST_CODE_SAVE_DRAFT_PROBLEM -> {
                         if (result != null && result is String && !TextUtils.isEmpty(result)) {
-                            Observable.just(createDraftProblem(result))
+                            OrmaProvider.db.prepareInsertIntoDraftProblemAsSingle()
                                     .subscribeOn(Schedulers.newThread())
-                                    .compose(this@EditorFragment.bindToLifecycle<DraftProblem>())
-                                    .subscribe(
-                                            { draftProblem -> OrmaProvider.db.insertIntoDraftProblem(draftProblem) },
-                                            { throwable -> run {
-                                                throwable.printStackTrace()
-                                                Snackbar.make(activity.findViewById(R.id.cover),
-                                                        R.string.editor_fragment_error_failure_save,
-                                                        Snackbar.LENGTH_SHORT).show()
-                                            } },
-                                            { Snackbar.make(activity.findViewById(R.id.cover),
-                                                        R.string.editor_fragment_message_complete_save,
-                                                        Snackbar.LENGTH_SHORT).show() })
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .map { inserter -> inserter.execute { createDraftProblem(result) } }
+                                    .compose(this@EditorFragment.bindToLifecycle<Long>())
+                                    .subscribe({ id -> run {
+                                        Snackbar.make(activity.findViewById(R.id.cover),
+                                                R.string.editor_fragment_message_complete_save,
+                                                Snackbar.LENGTH_SHORT).show()
+                                    } }, { throwable -> run {
+                                        throwable.printStackTrace()
+                                        Snackbar.make(activity.findViewById(R.id.cover),
+                                                R.string.editor_fragment_error_failure_save,
+                                                Snackbar.LENGTH_SHORT).show()
+                                    } })
                         } else {
                             showTitleErrorSnackbar()
                         }

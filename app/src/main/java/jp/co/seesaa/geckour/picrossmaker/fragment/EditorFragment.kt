@@ -256,7 +256,7 @@ class EditorFragment(listener: IListener): RxFragment() {
             binding.canvas.setImageBitmap(algorithm.createCanvasImage())
         } else {
             val draftProblem = OrmaProvider.db.selectFromDraftProblem().idEq(this.draftId).value()
-            this.size.set(draftProblem.keysHorizontal.keys.size, draftProblem.keysVertical.keys.size)
+            this.size.set(draftProblem.keysVertical.keys.size, draftProblem.keysHorizontal.keys.size)
             this.algorithm = Algorithm(size)
             val bitmap = this.algorithm.setCells(draftProblem.catalog.cells)
             binding.canvas.setImageBitmap(bitmap)
@@ -278,7 +278,7 @@ class EditorFragment(listener: IListener): RxFragment() {
                     MyAlertDialogFragment.Builder.REQUEST_CODE_SAVE_PROBLEM -> {
                         if (result != null && result is String && !TextUtils.isEmpty(result)) {
                             OrmaProvider.db.prepareInsertIntoProblem()
-                                    .executeAsSingle { getProblem(result) }
+                                    .executeAsSingle { createProblem(result) }
                                     .subscribeOn(Schedulers.newThread())
                                     .compose(this@EditorFragment.bindToLifecycle<Long>())
                                     .subscribe({ id -> run {
@@ -298,7 +298,7 @@ class EditorFragment(listener: IListener): RxFragment() {
 
                     MyAlertDialogFragment.Builder.REQUEST_CODE_SAVE_DRAFT_PROBLEM -> {
                         if (result != null && result is String && !TextUtils.isEmpty(result)) {
-                            Observable.just(getDraftProblem(result))
+                            Observable.just(createDraftProblem(result))
                                     .subscribeOn(Schedulers.newThread())
                                     .compose(this@EditorFragment.bindToLifecycle<DraftProblem>())
                                     .subscribe(
@@ -335,7 +335,7 @@ class EditorFragment(listener: IListener): RxFragment() {
         fragment.show(fragmentManager, if (isSolvable) MyAlertDialogFragment.Builder.TAG_SAVE_PROBLEM else MyAlertDialogFragment.Builder.TAG_SAVE_DRAFT_PROBLEM)
     }
 
-    fun getProblem(title: String): Problem {
+    fun createProblem(title: String): Problem {
         val thumb = algorithm.getThumbnailImage()
         val keysInRow: ArrayList<List<Int>> = ArrayList()
         (0..algorithm.size.y - 1).forEach {
@@ -349,7 +349,7 @@ class EditorFragment(listener: IListener): RxFragment() {
         return Problem(-1L, title, Problem.Companion.KeysCluster(*(keysInRow.toTypedArray())), Problem.Companion.KeysCluster(*(keysInColumn.toTypedArray())), thumb)
     }
 
-    fun getDraftProblem(title: String): DraftProblem {
+    fun createDraftProblem(title: String): DraftProblem {
         val thumb = algorithm.getThumbnailImage()
         val keysInRow: ArrayList<List<Int>> = ArrayList()
         (0..algorithm.size.y - 1).forEach {

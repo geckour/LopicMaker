@@ -181,7 +181,9 @@ open class CanvasUtil(val size: Point) {
                     if (keysLengths.height > sizeBlankArea.y) keysLengths.height else sizeBlankArea.y)
             var bitmap = createCanvasImage() ?: return image
 
-            for (cell in cells) bitmap = onEditCanvasImage(bitmap, cell, false) ?: return image
+            this.cells
+                    .filter(Cell::getState)
+                    .forEach { bitmap = onEditCanvasImage(bitmap, it, true) ?: return null }
 
             return bitmap
         }

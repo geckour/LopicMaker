@@ -72,8 +72,8 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
             binding.title.text = problem.title
             binding.point.text = binding.root.context
                     .getString(R.string.problem_fragment_item_point,
-                            problem.keysHorizontal.keys.size,
-                            problem.keysVertical.keys.size)
+                            problem.keysVertical.keys.size,
+                            problem.keysHorizontal.keys.size)
         }
     }
 

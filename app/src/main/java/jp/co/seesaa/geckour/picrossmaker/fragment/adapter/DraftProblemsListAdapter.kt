@@ -71,8 +71,8 @@ class DraftProblemsListAdapter(val listener: DraftProblemsListAdapter.IListener)
             binding.title.text = draftProblem.title
             binding.point.text = binding.root.context
                     .getString(R.string.problem_fragment_item_point,
-                            draftProblem.keysHorizontal.keys.size,
-                            draftProblem.keysVertical.keys.size)
+                            draftProblem.keysVertical.keys.size,
+                            draftProblem.keysHorizontal.keys.size)
         }
     }
 

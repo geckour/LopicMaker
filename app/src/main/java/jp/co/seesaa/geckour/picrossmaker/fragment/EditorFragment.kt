@@ -7,6 +7,7 @@ import android.graphics.PointF
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
+import android.support.design.widget.NavigationView
 import android.support.design.widget.Snackbar
 import android.text.TextUtils
 import android.util.Log
@@ -15,6 +16,7 @@ import android.view.*
 import com.github.yamamotoj.pikkel.Pikkel
 import com.github.yamamotoj.pikkel.PikkelDelegate
 import com.trello.rxlifecycle2.components.RxFragment
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import jp.co.seesaa.geckour.picrossmaker.Constant
@@ -148,6 +150,9 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
                 } else false
             }
         }
+
+        val nav = activity.findViewById(R.id.nav_view) as NavigationView
+        nav.menu.findItem(R.id.nav_editor).isChecked = true
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -216,18 +221,12 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                 pointPrev0.set(-1f, -1f)
                 pointPrev1.set(-1f, -1f)
-                val keysHorizontal: ArrayList<List<Int>> = (0..size.y - 1)
-                        .mapTo(ArrayList()) {
-                            val cellsInRow = algorithm.getCellsInRow(it) ?: return true
-                            algorithm.getKeys(cellsInRow)
-                        }
-                val keysVertical: ArrayList<List<Int>> = (0..size.x - 1)
-                        .mapTo(ArrayList()) {
-                            val cellsInColumn = algorithm.getCellsInColumn(it) ?: return true
-                            algorithm.getKeys(cellsInColumn)
-                        }
 
-                isSolvable = algorithm.isSolvable(keysHorizontal, keysVertical)
+                Observable.just(algorithm.isSolvable())
+                        .subscribeOn(Schedulers.computation())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .compose(this.bindToLifecycle<Boolean>())
+                        .subscribe { b -> isSolvable = b }
             }
 
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_MOVE -> {

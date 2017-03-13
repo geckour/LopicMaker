@@ -8,21 +8,20 @@ class KeyStates(val lineSize: Int, val keys: List<Int>) {
         var varCount = 0
     }
 
-    val actualKeys = keys.filter { it > 0 }
-    private val preKeysSumList: ArrayList<Int> = ArrayList()
     val slideMargin: Int
+    private val preKeysSumList: ArrayList<Int> = ArrayList()
     private val cnfVars: ArrayList<Int> = ArrayList()
 
     init {
         var keysSum = 0
-        for (key in actualKeys) {
+        for (key in keys) {
             this.preKeysSumList.add(keysSum)
             keysSum += key
         }
 
         this.slideMargin = this.lineSize - keysSum - this.keys.size + 1
 
-        (0..(this.slideMargin + 1) * this.actualKeys.size - 1).forEach {
+        (0..(this.slideMargin + 1) * this.keys.size - 1).forEach {
             this.cnfVars.add(++varCount)
         }
     }

@@ -4,6 +4,7 @@ import android.content.DialogInterface
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
+import android.support.design.widget.NavigationView
 import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -88,6 +89,9 @@ class ProblemsFragment: RxFragment() {
         }
 
         binding.textIndicateEmpty.setText(R.string.problem_fragment_message_empty)
+
+        val nav = activity.findViewById(R.id.nav_view) as NavigationView
+        nav.menu.findItem(R.id.nav_problem).isChecked = true
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {

@@ -2,7 +2,6 @@ package jp.co.seesaa.geckour.picrossmaker.util
 
 import android.graphics.Point
 import android.util.Log
-import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import jp.co.seesaa.geckour.picrossmaker.model.KeyStates
 import org.sat4j.core.VecInt
 import org.sat4j.minisat.SolverFactory
@@ -13,13 +12,20 @@ class Algorithm(size: Point): CanvasUtil(size) {
     private val solver = SolverFactory.newDefault()
 
     // FIXME
-    fun isSolvable(keysHorizontal: List<List<Int>>, keysVertical: List<List<Int>>): Boolean {
+    fun isSolvable(): Boolean {
         solver.reset()
-
-        val cells: ArrayList<Cell> = ArrayList()
-        initCells(cells)
-
         KeyStates.varCount = size.x * size.y
+
+        val keysHorizontal: ArrayList<List<Int>> = (0..size.y - 1)
+                .mapTo(ArrayList()) {
+                    val cellsInRow = getCellsInRow(it) ?: return false
+                    getKeys(cellsInRow).filter { it > 0 }
+                }
+        val keysVertical: ArrayList<List<Int>> = (0..size.x - 1)
+                .mapTo(ArrayList()) {
+                    val cellsInColumn = getCellsInColumn(it) ?: return false
+                    getKeys(cellsInColumn).filter { it > 0 }
+                }
 
         // row
         for (i in 0..size.y - 1) {
@@ -45,7 +51,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
     }
 
     fun tseytinEncode1(keyStates: KeyStates): Boolean {
-        for (i in 0..keyStates.actualKeys.size - 1) {
+        for (i in 0..keyStates.keys.size - 1) {
             val v = VecInt()
 
             for (j in 0..keyStates.slideMargin) {
@@ -56,7 +62,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
         }
 
         for (i in 0..keyStates.slideMargin) {
-            for (j in 0..keyStates.actualKeys.size - 1) {
+            for (j in 0..keyStates.keys.size - 1) {
                 for (k in i + 1..keyStates.slideMargin) {
                     val v = VecInt()
                     v.push(-(keyStates.getCnfVar(j, k) ?: return false))
@@ -71,7 +77,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
     }
 
     fun tseytinEncode2(keyStates: KeyStates): Boolean {
-        for (i in 0..keyStates.actualKeys.size - 2) {
+        for (i in 0..keyStates.keys.size - 2) {
             for (j in 0..keyStates.slideMargin) {
                 val v = VecInt()
                 v.push(-(keyStates.getCnfVar(i, j) ?: return false))
@@ -93,7 +99,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
             val cellIndex = getCellIndexByCoordinate(coordinate) + 1
             if (cellIndex < 1) return false
 
-            for ((j, key) in keyStates.actualKeys.withIndex()) {
+            for ((j, key) in keyStates.keys.withIndex()) {
                 for (k in 0..keyStates.slideMargin) {
                     (0..key - 1)
                             .filter { i == (keyStates.getPreKeysSum(j) ?: return false) + j + k + it }
@@ -112,7 +118,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
             val cellIndex = getCellIndexByCoordinate(coordinate) + 1
             if (cellIndex < 1) return false
 
-            for ((j, key) in keyStates.actualKeys.withIndex()) {
+            for ((j, key) in keyStates.keys.withIndex()) {
                 for (k in 0..keyStates.slideMargin) {
                     for (l in 0..key - 1) {
                         if (i == (keyStates.getPreKeysSum(j) ?: return false) + j + k + l) {

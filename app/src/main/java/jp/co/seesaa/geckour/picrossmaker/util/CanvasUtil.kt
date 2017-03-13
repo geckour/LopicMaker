@@ -1,7 +1,6 @@
 package jp.co.seesaa.geckour.picrossmaker.util
 
 import android.graphics.*
-import android.os.Parcelable
 import android.util.Log
 import android.util.Size
 import android.widget.ImageView

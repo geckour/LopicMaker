@@ -11,13 +11,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import com.trello.rxlifecycle2.components.support.RxDialogFragment
+import com.trello.rxlifecycle2.components.support.RxAppCompatDialogFragment
 import com.trello.rxlifecycle2.components.support.RxFragment
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.DialogDefineSizeBinding
+import jp.co.seesaa.geckour.picrossmaker.databinding.DialogDefineTitleBinding
 import timber.log.Timber
 
-class MyAlertDialogFragment(val listener: IListener) : RxDialogFragment() {
+class MyAlertDialogFragment(val listener: IListener) : RxAppCompatDialogFragment() {
     companion object {
         fun showSnackbar(view: View, resId: Int) {
             Snackbar.make(view,
@@ -26,7 +27,8 @@ class MyAlertDialogFragment(val listener: IListener) : RxDialogFragment() {
         }
     }
 
-    private var binding: DialogDefineSizeBinding? = null
+    private lateinit var sizeBinding: DialogDefineSizeBinding
+    private lateinit var titleBinding: DialogDefineTitleBinding
 
     interface IListener {
         fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: Int, resultCode: Int, result: Any? = null)
@@ -107,19 +109,9 @@ class MyAlertDialogFragment(val listener: IListener) : RxDialogFragment() {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        when (getRequestCode()) {
-            Builder.REQUEST_CODE_DEFINE_SIZE -> {
-                binding = DataBindingUtil.inflate(inflater, R.layout.dialog_define_size, container, false)
-                return binding?.root
-            }
-        }
-
-        return inflater?.inflate(R.layout.dialog_define_size, container)
-    }
-
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val resId = arguments.getInt(Builder.ARGS_RES_ID, -1)
+
         if (savedInstanceState == null) {
             isCancelable = arguments.getBoolean(Builder.ARGS_CANCELABLE)
             val builder = AlertDialog.Builder(activity)
@@ -132,9 +124,23 @@ class MyAlertDialogFragment(val listener: IListener) : RxDialogFragment() {
                             R.string.dialog_alert_confirm,
                             { dialogInterface, which -> fireListener(dialogInterface, which) })
 
-            if (resId > 0) builder.setView(resId)
+            if (resId > 0) {
+                when (arguments.getInt(Builder.ARGS_RES_ID, -1)) {
+                    R.layout.dialog_define_size -> {
+                        val view = activity.layoutInflater.inflate(R.layout.dialog_define_size, null)
+                        sizeBinding = DataBindingUtil.bind(view)
+                        builder.setView(sizeBinding.root)
+                        return builder.create()
+                    }
 
-            return builder.create()
+                    R.layout.dialog_define_title -> {
+                        val view = activity.layoutInflater.inflate(R.layout.dialog_define_title, null)
+                        titleBinding = DataBindingUtil.bind(view)
+                        builder.setView(titleBinding.root)
+                        return builder.create()
+                    }
+                }
+            }
         }
 
         return super.onCreateDialog(savedInstanceState)

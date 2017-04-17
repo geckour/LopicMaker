@@ -11,12 +11,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import com.trello.rxlifecycle2.components.support.RxDialogFragment
+import com.trello.rxlifecycle2.components.support.RxFragment
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.DialogDefineSizeBinding
-import jp.co.seesaa.geckour.picrossmaker.fragment.EditorFragment
 import timber.log.Timber
 
-class MyAlertDialogFragment(val listener: IListener) : DialogFragment() {
+class MyAlertDialogFragment(val listener: IListener) : RxDialogFragment() {
     companion object {
         fun showSnackbar(view: View, resId: Int) {
             Snackbar.make(view,
@@ -32,7 +33,7 @@ class MyAlertDialogFragment(val listener: IListener) : DialogFragment() {
     }
 
     class Builder(val listener: IListener, parent: Any) {
-        private var parentFragment: Fragment? = null
+        private var parentFragment: RxFragment? = null
         private var parentActivity: Activity? = null
 
         companion object {
@@ -50,10 +51,10 @@ class MyAlertDialogFragment(val listener: IListener) : DialogFragment() {
         }
 
         init {
-            require(parent is Activity || parent is Fragment)
+            require(parent is Activity || parent is RxFragment)
 
             if (parent is Activity) parentActivity = parent
-            if (parent is Fragment) parentFragment = parent
+            if (parent is RxFragment) parentFragment = parent
         }
 
         private var title: String = ""

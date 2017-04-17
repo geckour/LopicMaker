@@ -43,7 +43,7 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
 
         if (savedInstanceState == null) {
             val fragment = ProblemsFragment.newInstance()
-            fragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+            supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
         }
     }
 
@@ -69,12 +69,12 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
         when (id) {
             R.id.nav_problem -> {
                 val fragment = ProblemsFragment.newInstance()
-                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(null).commit()
+                supportFragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(null).commit()
             }
 
             R.id.nav_draft -> {
                 val fragment = DraftProblemsFragment.newInstance()
-                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(null).commit()
+                supportFragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(null).commit()
             }
 
             R.id.nav_editor -> {
@@ -93,7 +93,7 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
                                 if (result != null && result is Size) {
                                     val fragment = EditorFragment.newInstance(result, R.string.fragment_argument_canvas_size.toString(), editorFragmentListener)
                                     if (fragment != null) {
-                                        fragmentManager.beginTransaction()
+                                        supportFragmentManager.beginTransaction()
                                                 .replace(R.id.container, fragment)
                                                 .addToBackStack(null)
                                                 .commit()
@@ -108,7 +108,7 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
                         .setRequestCode(MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE)
                         .setCancelable(true)
                         .commit()
-                fragment.show(fragmentManager, MyAlertDialogFragment.Builder.TAG_DEFINE_SIZE)
+                fragment.show(supportFragmentManager, MyAlertDialogFragment.Builder.TAG_DEFINE_SIZE)
             }
 
             R.id.nav_setting -> {
@@ -139,7 +139,7 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
                     if (result != null && result is Size) {
                         val fragment = EditorFragment.newInstance(result, R.string.fragment_argument_canvas_size.toString(), editorFragmentListener)
                         if (fragment != null) {
-                            fragmentManager.beginTransaction()
+                            supportFragmentManager.beginTransaction()
                                     .replace(R.id.container, fragment)
                                     .addToBackStack(null)
                                     .commit()

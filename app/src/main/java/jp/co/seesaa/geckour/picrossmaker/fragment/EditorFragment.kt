@@ -14,7 +14,7 @@ import android.util.Size
 import android.view.*
 import com.github.yamamotoj.pikkel.Pikkel
 import com.github.yamamotoj.pikkel.PikkelDelegate
-import com.trello.rxlifecycle2.components.RxFragment
+import com.trello.rxlifecycle2.components.support.RxFragment
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
@@ -350,7 +350,7 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
                 .setCancelable(true)
                 .commit()
 
-        fragment.show(fragmentManager, if (isSolvable) MyAlertDialogFragment.Builder.TAG_SAVE_PROBLEM else MyAlertDialogFragment.Builder.TAG_SAVE_DRAFT_PROBLEM)
+        fragment.show((activity as MainActivity).supportFragmentManager, if (isSolvable) MyAlertDialogFragment.Builder.TAG_SAVE_PROBLEM else MyAlertDialogFragment.Builder.TAG_SAVE_DRAFT_PROBLEM)
     }
 
     fun createProblem(title: String): Problem {

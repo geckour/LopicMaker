@@ -10,7 +10,7 @@ import android.support.v7.widget.helper.ItemTouchHelper
 import android.util.Log
 import android.util.Size
 import android.view.*
-import com.trello.rxlifecycle2.components.RxFragment
+import com.trello.rxlifecycle2.components.support.RxFragment
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import jp.co.seesaa.geckour.picrossmaker.R
@@ -69,7 +69,7 @@ class ProblemsFragment: RxFragment() {
                         .setRequestCode(MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE)
                         .setCancelable(true)
                         .commit()
-                fragment.show(fragmentManager, MyAlertDialogFragment.Builder.TAG_DEFINE_SIZE)
+                fragment.show((activity as MainActivity).supportFragmentManager, MyAlertDialogFragment.Builder.TAG_DEFINE_SIZE)
             }
         }
 

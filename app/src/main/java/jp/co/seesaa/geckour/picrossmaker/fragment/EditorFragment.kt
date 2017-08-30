@@ -8,7 +8,6 @@ import android.graphics.PointF
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
-import android.text.TextUtils
 import android.util.Size
 import android.view.*
 import com.github.yamamotoj.pikkel.Pikkel
@@ -17,9 +16,7 @@ import com.trello.rxlifecycle2.components.RxFragment
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
-import jp.co.seesaa.geckour.picrossmaker.App
-import jp.co.seesaa.geckour.picrossmaker.Constant
-import jp.co.seesaa.geckour.picrossmaker.R
+import jp.co.seesaa.geckour.picrossmaker.*
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentEditorBinding
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
@@ -30,6 +27,7 @@ import jp.co.seesaa.geckour.picrossmaker.util.Algorithm
 import jp.co.seesaa.geckour.picrossmaker.util.CanvasUtil
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
+import kotlinx.coroutines.experimental.Job
 import kotlin.collections.ArrayList
 
 class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by PikkelDelegate() {
@@ -42,9 +40,16 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
     private val pointPrev1 = PointF(-1f, -1f)
     private var isSolvable by state(true)
     lateinit private var algorithm: Algorithm
+    private val jobList: ArrayList<Job> = ArrayList()
 
     interface IListener {
         fun onCanvasSizeError(size: Size)
+    }
+
+    enum class ArgKeys {
+        CANVAS_SIZE,
+        PROBLEM_ID,
+        DRAFT_ID
     }
 
     companion object {
@@ -55,16 +60,16 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
             }
             return EditorFragment().apply {
                 arguments = Bundle().apply {
-                    putSize(Constant.ARGS_FRAGMENT_CANVAS_SIZE, size)
+                    putSize(ArgKeys.CANVAS_SIZE.name, size)
                 }
             }
         }
 
-        fun newInstance(id: Long, argStr: String): EditorFragment? {
+        fun newInstance(id: Long, argKey: ArgKeys): EditorFragment? {
             if (id > 0) {
                 return EditorFragment().apply {
                     arguments = Bundle().apply {
-                        putLong(argStr, id)
+                        putLong(argKey.name, id)
                     }
                 }
             }
@@ -79,10 +84,10 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
 
         setHasOptionsMenu(true)
 
-        this.draftId = if (arguments.containsKey(Constant.ARGS_FRAGMENT_DRAFT_ID)) arguments.getLong(Constant.ARGS_FRAGMENT_DRAFT_ID, -1) else -1
-        this.problemId = if (arguments.containsKey(Constant.ARGS_FRAGMENT_PROBLEM_ID)) arguments.getLong(Constant.ARGS_FRAGMENT_PROBLEM_ID, -1) else -1
-        if (this.draftId < 0 && this.problemId < 0 && arguments.containsKey(Constant.ARGS_FRAGMENT_CANVAS_SIZE)) {
-            val size = arguments.getSize(Constant.ARGS_FRAGMENT_CANVAS_SIZE)
+        this.draftId = if (arguments.containsKey(ArgKeys.DRAFT_ID.name)) arguments.getLong(ArgKeys.DRAFT_ID.name, -1) else -1
+        this.problemId = if (arguments.containsKey(ArgKeys.PROBLEM_ID.name)) arguments.getLong(ArgKeys.PROBLEM_ID.name, -1) else -1
+        if (this.draftId < 0 && this.problemId < 0 && arguments.containsKey(ArgKeys.CANVAS_SIZE.name)) {
+            val size = arguments.getSize(ArgKeys.CANVAS_SIZE.name)
             this.size.set(size.width, size.height)
         }
     }
@@ -103,13 +108,15 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
 
         when {
             draftId > -1 -> {
-                OrmaProvider.db.selectFromDraftProblem().idEq(draftId).valueOrNull()?.let {
-                    (activity as? MainActivity)?.actionBar?.setTitle(getString(R.string.action_bar_title_edit_with_title, it.title))
+                ui(jobList) {
+                    val draftProblem = async { OrmaProvider.db.selectFromDraftProblem().idEq(draftId).valueOrNull() }.await()
+                    draftProblem?.title?.let { (activity as? MainActivity)?.actionBar?.setTitle(getString(R.string.action_bar_title_edit_with_title, it)) }
                 }
             }
             problemId > -1 -> {
-                OrmaProvider.db.selectFromProblem().idEq(problemId).valueOrNull()?.let {
-                    (activity as? MainActivity)?.actionBar?.setTitle(getString(R.string.action_bar_title_edit_with_title, it.title))
+                ui(jobList) {
+                    val problem = async { OrmaProvider.db.selectFromProblem().idEq(problemId).valueOrNull() }.await()
+                    problem?.title?.let { (activity as? MainActivity)?.actionBar?.setTitle(getString(R.string.action_bar_title_edit_with_title, it)) }
                 }
             }
             else -> (activity as? MainActivity)?.actionBar?.setTitle(R.string.action_bar_title_edit)
@@ -157,6 +164,14 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
         listener = activity as? IListener
     }
 
+    override fun onPause() {
+        super.onPause()
+        jobList.apply {
+            forEach { it.cancel() }
+            clear()
+        }
+    }
+
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
         super.onCreateOptionsMenu(menu, inflater)
 
@@ -200,43 +215,29 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
     private fun onPositive(requestCode: MyAlertDialogFragment.RequestCode, result: Any?) {
         when (requestCode) {
             MyAlertDialogFragment.RequestCode.SAVE_PROBLEM -> {
-                if (result != null && result is String && !TextUtils.isEmpty(result)) {
-                    OrmaProvider.db.prepareInsertIntoProblemAsSingle()
-                            .subscribeOn(Schedulers.newThread())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .map { inserter -> inserter.execute { createProblem(result) } }
-                            .compose(this@EditorFragment.bindToLifecycle<Long>())
-                            .subscribe(
-                                    { showSnackbar(activity.findViewById(R.id.container),
-                                            R.string.editor_fragment_message_complete_save) },
-                                    { throwable ->
-                                        throwable.printStackTrace()
-                                        showSnackbar(activity.findViewById(R.id.container),
-                                                R.string.editor_fragment_error_failure_save) })
-                } else {
-                    showSnackbar(activity.findViewById(R.id.container),
-                            R.string.editor_fragment_error_invalid_title)
-                }
+                (result as? String)?.let {
+                    if (it.isNotEmpty()) {
+                        ui(jobList, {
+                            showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_failure_save)
+                        }) {
+                            async { OrmaProvider.db.insertIntoProblem(createProblem(it)) }.await()
+                            showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
+                        }
+                    } else null
+                } ?: showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_invalid_title)
             }
 
             MyAlertDialogFragment.RequestCode.SAVE_DRAFT_PROBLEM -> {
-                if (result != null && result is String && !TextUtils.isEmpty(result)) {
-                    OrmaProvider.db.prepareInsertIntoDraftProblemAsSingle()
-                            .subscribeOn(Schedulers.newThread())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .map { inserter -> inserter.execute { createDraftProblem(result) } }
-                            .compose(this@EditorFragment.bindToLifecycle<Long>())
-                            .subscribe(
-                                    { showSnackbar(activity.findViewById(R.id.container),
-                                            R.string.editor_fragment_message_complete_save) },
-                                    { throwable ->
-                                        throwable.printStackTrace()
-                                        showSnackbar(activity.findViewById(R.id.container),
-                                                R.string.editor_fragment_error_failure_save) })
-                } else {
-                    showSnackbar(activity.findViewById(R.id.container),
-                            R.string.editor_fragment_error_invalid_title)
-                }
+                (result as? String)?.let {
+                    if (it.isNotEmpty()) {
+                        ui(jobList, {
+                            showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_failure_save)
+                        }) {
+                            async { OrmaProvider.db.insertIntoDraftProblem(createDraftProblem(it)) }.await()
+                            showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
+                        }
+                    } else null
+                } ?: showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_invalid_title)
             }
 
             else -> {}
@@ -320,22 +321,31 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
     private fun onRefresh(savedInstanceState: Bundle?) {
         when {
             this.draftId > -1 -> {
-                OrmaProvider.db.selectFromDraftProblem().idEq(this.draftId).valueOrNull()?.let {
-                    this.size.set(it.keysVertical.keys.size, it.keysHorizontal.keys.size)
-                    this.algorithm = Algorithm(size)
-                    val bitmap = this.algorithm.setCells(
-                            savedInstanceState?.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) } ?: it.catalog.cells)
+                ui(jobList) {
+                    val bitmap = async {
+                        OrmaProvider.db.selectFromDraftProblem().idEq(this@EditorFragment.draftId).valueOrNull()?.let {
+                            this@EditorFragment.size.set(it.keysVertical.keys.size, it.keysHorizontal.keys.size)
+                            this@EditorFragment.algorithm = Algorithm(size)
+                            return@async this@EditorFragment.algorithm.setCells(
+                                    savedInstanceState?.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) } ?: it.catalog.cells)
+                        }
+                    }.await()
                     binding.canvas.setImageBitmap(bitmap)
                 }
+
             }
             this.problemId > -1 -> {
-                OrmaProvider.db.selectFromProblem().idEq(this.problemId).valueOrNull()?.let {
-                    this.size.set(it.keysVertical.keys.size, it.keysHorizontal.keys.size)
-                    this.algorithm = Algorithm(size)
-                    val bitmap = this.algorithm.setCells(
-                            savedInstanceState?.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) } ?: it.catalog.cells)
+                ui(jobList) {
+                    val bitmap = async {
+                        OrmaProvider.db.selectFromProblem().idEq(this@EditorFragment.problemId).valueOrNull()?.let {
+                            this@EditorFragment.size.set(it.keysVertical.keys.size, it.keysHorizontal.keys.size)
+                            this@EditorFragment.algorithm = Algorithm(size)
+                            return@async this@EditorFragment.algorithm.setCells(savedInstanceState?.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) } ?: it.catalog.cells)
+                        }
+                    }.await()
                     binding.canvas.setImageBitmap(bitmap)
                 }
+
             }
             else -> {
                 this.algorithm = Algorithm(size)

@@ -3,7 +3,6 @@ package jp.co.seesaa.geckour.picrossmaker.fragment.adapter
 import android.databinding.DataBindingUtil
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.ItemProblemBinding
@@ -62,15 +61,13 @@ class DraftProblemsListAdapter(val listener: DraftProblemsListAdapter.IListener)
         val pos = holder.adapterPosition
         val problem = draftProblems[pos]
         holder.bindData(problem)
-        holder.itemView.setOnClickListener { view -> listener.onClickDraftProblemItem(pos) }
-        holder.itemView.setOnLongClickListener { view -> listener.onLongClickDraftProblemItem(pos) }
     }
 
     override fun getItemCount(): Int {
         return draftProblems.size
     }
 
-    class ViewHolder(private val binding: ItemProblemBinding): RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: ItemProblemBinding): RecyclerView.ViewHolder(binding.root) {
 
         fun bindData(draftProblem: DraftProblem) {
             binding.thumb.setImageBitmap(draftProblem.thumb)
@@ -79,12 +76,14 @@ class DraftProblemsListAdapter(val listener: DraftProblemsListAdapter.IListener)
                     .getString(R.string.problem_fragment_item_point,
                             draftProblem.keysVertical.keys.size,
                             draftProblem.keysHorizontal.keys.size)
+            binding.root.setOnClickListener { listener.onClickDraftProblemItem(draftProblem) }
+            binding.root.setOnLongClickListener { listener.onLongClickDraftProblemItem(draftProblem) }
         }
     }
 
     interface IListener {
-        fun onClickDraftProblemItem(position: Int)
-        fun onLongClickDraftProblemItem(position: Int): Boolean
+        fun onClickDraftProblemItem(draftProblem: DraftProblem)
+        fun onLongClickDraftProblemItem(draftProblem: DraftProblem): Boolean
         fun onBind()
         fun onAllUnbind()
     }

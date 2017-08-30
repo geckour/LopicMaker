@@ -7,33 +7,27 @@ import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
-import jp.co.seesaa.geckour.picrossmaker.Constant
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
+import jp.co.seesaa.geckour.picrossmaker.async
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentProblemsBinding
 import jp.co.seesaa.geckour.picrossmaker.fragment.adapter.ProblemsListAdapter
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
+import jp.co.seesaa.geckour.picrossmaker.model.Problem
+import jp.co.seesaa.geckour.picrossmaker.ui
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
+import kotlinx.coroutines.experimental.Job
 
 class ProblemsFragment: RxFragment() {
-
-    lateinit private var binding: FragmentProblemsBinding
-    lateinit private var adapter: ProblemsListAdapter
 
     companion object {
         fun newInstance(): ProblemsFragment = ProblemsFragment()
     }
 
-    override fun onResume() {
-        super.onResume()
-
-        (activity as MainActivity).actionBar?.setTitle(R.string.app_name)
-
-        (activity as MainActivity).binding.appBarMain.fab.visibility = View.VISIBLE
-    }
+    lateinit private var binding: FragmentProblemsBinding
+    lateinit private var adapter: ProblemsListAdapter
+    private val jobList: ArrayList<Job> = ArrayList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,6 +82,22 @@ class ProblemsFragment: RxFragment() {
         (activity as MainActivity).binding.navView.menu.findItem(R.id.nav_problem).isChecked = true
     }
 
+    override fun onResume() {
+        super.onResume()
+
+        (activity as MainActivity).actionBar?.setTitle(R.string.app_name)
+
+        (activity as MainActivity).binding.appBarMain.fab.visibility = View.VISIBLE
+    }
+
+    override fun onPause() {
+        super.onPause()
+        jobList.apply {
+            forEach { it.cancel() }
+            clear()
+        }
+    }
+
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
         super.onCreateOptionsMenu(menu, inflater)
 
@@ -106,12 +116,10 @@ class ProblemsFragment: RxFragment() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun getAdapter(): ProblemsListAdapter {
-        return ProblemsListAdapter(object: ProblemsListAdapter.IListener {
-            override fun onClickProblemItem(position: Int) {
-                val id = adapter.getProblemByIndex(position)?.id
-                if (id != null) {
-                    val fragment = EditorFragment.newInstance(id, Constant.ARGS_FRAGMENT_PROBLEM_ID)
+    private fun getAdapter(): ProblemsListAdapter =
+            ProblemsListAdapter(object: ProblemsListAdapter.IListener {
+                override fun onClickProblemItem(problem: Problem) {
+                    val fragment = EditorFragment.newInstance(problem.id, EditorFragment.ArgKeys.PROBLEM_ID)
                     if (fragment != null) {
                         fragmentManager.beginTransaction()
                                 .replace(R.id.container, fragment)
@@ -119,19 +127,17 @@ class ProblemsFragment: RxFragment() {
                                 .commit()
                     }
                 }
-            }
 
-            override fun onLongClickProblemItem(position: Int): Boolean = true
+                override fun onLongClickProblemItem(problem: Problem): Boolean = true
 
-            override fun onBind() {
-                binding.textIndicateEmpty.visibility = View.GONE
-            }
+                override fun onBind() {
+                    binding.textIndicateEmpty.visibility = View.GONE
+                }
 
-            override fun onAllUnbind() {
-                binding.textIndicateEmpty.visibility = View.VISIBLE
-            }
-        })
-    }
+                override fun onAllUnbind() {
+                    binding.textIndicateEmpty.visibility = View.VISIBLE
+                }
+            })
 
     private fun getItemTouchHelper(): ItemTouchHelper {
         return ItemTouchHelper(object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
@@ -140,37 +146,33 @@ class ProblemsFragment: RxFragment() {
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder?, direction: Int) {
                 val position = viewHolder?.adapterPosition
                 if (position != null) {
-                    OrmaProvider.db.deleteFromProblem()
-                            .idEq(adapter.getProblemByIndex(position)?.id ?: -1)
-                            .executeAsSingle()
-                            .subscribeOn(Schedulers.newThread())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .compose(this@ProblemsFragment.bindToLifecycle<Int>())
-                            .subscribe(
-                                    { deleteNum ->
-                                        if (deleteNum > 0) {
-                                            showSnackbar(activity.findViewById(R.id.container),
-                                                    R.string.problem_fragment_message_complete_delete)
-                                            adapter.removeProblemsByIndex(position)
-                                        } else {
-                                            showSnackbar(activity.findViewById(R.id.container),
-                                                    R.string.problem_fragment_error_failure_delete)
-                                        }
-                                    },
-                                    { throwable ->
-                                        throwable.printStackTrace()
-                                        showSnackbar(activity.findViewById(R.id.container),
-                                                R.string.problem_fragment_error_failure_delete)
-                                    }
-                            )
+                    ui(jobList, { showSnackbar(activity.findViewById(R.id.container), R.string.problem_fragment_error_failure_delete) }) {
+                        val deleteNum = async {
+                            OrmaProvider.db.deleteFromProblem()
+                                    .idEq(adapter.getProblemByIndex(position)?.id ?: -1)
+                                    .execute()
+                        }.await()
+
+                        if (deleteNum > 0) {
+                            showSnackbar(activity.findViewById(R.id.container),
+                                    R.string.problem_fragment_message_complete_delete)
+                            adapter.removeProblemsByIndex(position)
+                        } else {
+                            showSnackbar(activity.findViewById(R.id.container),
+                                    R.string.problem_fragment_error_failure_delete)
+                        }
+                    }
+
                 }
             }
         })
     }
 
     private fun fetchProblems() {
-        adapter.clearProblems()
-        val problems = OrmaProvider.db.selectFromProblem().orderBy("editedAt").toList()
-        adapter.addProblems(problems)
+        ui(jobList) {
+            async { adapter.clearProblems() }.await()
+            val problems = async { OrmaProvider.db.selectFromProblem().orderBy("editedAt").toList() }.await()
+            adapter.addProblems(problems)
+        }
     }
 }

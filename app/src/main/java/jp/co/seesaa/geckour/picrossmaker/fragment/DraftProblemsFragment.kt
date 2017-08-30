@@ -5,36 +5,29 @@ import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
-import android.util.Log
 import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
-import jp.co.seesaa.geckour.picrossmaker.Constant
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
+import jp.co.seesaa.geckour.picrossmaker.async
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentProblemsBinding
 import jp.co.seesaa.geckour.picrossmaker.fragment.adapter.DraftProblemsListAdapter
+import jp.co.seesaa.geckour.picrossmaker.model.DraftProblem
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
+import jp.co.seesaa.geckour.picrossmaker.ui
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
+import kotlinx.coroutines.experimental.Job
 
 class DraftProblemsFragment: RxFragment() {
-
-    lateinit private var binding: FragmentProblemsBinding
-    lateinit private var adapter: DraftProblemsListAdapter
 
     companion object {
         fun newInstance(): DraftProblemsFragment = DraftProblemsFragment()
     }
 
-    override fun onResume() {
-        super.onResume()
-
-        (activity as MainActivity).actionBar?.setTitle(R.string.action_bar_title_draft)
-
-        (activity as MainActivity).binding.appBarMain.fab.visibility = View.VISIBLE
-    }
+    lateinit private var binding: FragmentProblemsBinding
+    lateinit private var adapter: DraftProblemsListAdapter
+    private val jobList: ArrayList<Job> = ArrayList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +79,22 @@ class DraftProblemsFragment: RxFragment() {
         (activity as MainActivity).binding.navView.menu.findItem(R.id.nav_draft).isChecked = true
     }
 
+    override fun onResume() {
+        super.onResume()
+
+        (activity as MainActivity).actionBar?.setTitle(R.string.action_bar_title_draft)
+
+        (activity as MainActivity).binding.appBarMain.fab.visibility = View.VISIBLE
+    }
+
+    override fun onPause() {
+        super.onPause()
+        jobList.apply {
+            forEach { it.cancel() }
+            clear()
+        }
+    }
+
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
         super.onCreateOptionsMenu(menu, inflater)
 
@@ -104,14 +113,11 @@ class DraftProblemsFragment: RxFragment() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun getAdapter(): DraftProblemsListAdapter {
-        return DraftProblemsListAdapter(
-                object: DraftProblemsListAdapter.IListener {
-                    override fun onClickDraftProblemItem(position: Int) {
-                        val id = adapter.getDraftProblemByIndex(position)?.id
-                        Log.d("onClickDraftProblemItem", "id: $id")
-                        if (id != null) {
-                            val fragment = EditorFragment.newInstance(id, Constant.ARGS_FRAGMENT_DRAFT_ID)
+    private fun getAdapter(): DraftProblemsListAdapter =
+            DraftProblemsListAdapter(
+                    object: DraftProblemsListAdapter.IListener {
+                        override fun onClickDraftProblemItem(draftProblem: DraftProblem) {
+                            val fragment = EditorFragment.newInstance(draftProblem.id, EditorFragment.ArgKeys.DRAFT_ID)
                             if (fragment != null) {
                                 fragmentManager.beginTransaction()
                                         .replace(R.id.container, fragment)
@@ -119,19 +125,17 @@ class DraftProblemsFragment: RxFragment() {
                                         .commit()
                             }
                         }
-                    }
 
-                    override fun onLongClickDraftProblemItem(position: Int): Boolean = true
+                        override fun onLongClickDraftProblemItem(draftProblem: DraftProblem): Boolean = true
 
-                    override fun onBind() {
-                        binding.textIndicateEmpty.visibility = View.GONE
-                    }
+                        override fun onBind() {
+                            binding.textIndicateEmpty.visibility = View.GONE
+                        }
 
-                    override fun onAllUnbind() {
-                        binding.textIndicateEmpty.visibility = View.VISIBLE
-                    }
-                })
-    }
+                        override fun onAllUnbind() {
+                            binding.textIndicateEmpty.visibility = View.VISIBLE
+                        }
+                    })
 
     private fun getItemTouchHelper(): ItemTouchHelper {
         return ItemTouchHelper(object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
@@ -141,34 +145,32 @@ class DraftProblemsFragment: RxFragment() {
                 val position = viewHolder?.adapterPosition
                 if (position != null) {
                     val id = adapter.getDraftProblemByIndex(position)?.id ?: -1
-                    OrmaProvider.db.deleteFromDraftProblem()
-                            .idEq(id)
-                            .executeAsSingle()
-                            .subscribeOn(Schedulers.newThread())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .compose(this@DraftProblemsFragment.bindToLifecycle<Int>())
-                            .subscribe({ deleteNum -> run {
-                                if (deleteNum > 0) {
-                                    showSnackbar(activity.findViewById(R.id.container),
-                                            R.string.problem_fragment_message_complete_delete)
-                                    adapter.removeDraftProblemsByIndex(position)
-                                } else {
-                                    showSnackbar(activity.findViewById(R.id.container),
-                                            R.string.problem_fragment_error_failure_delete)
-                                }
-                            } }, { throwable -> run {
-                                throwable.printStackTrace()
-                                showSnackbar(activity.findViewById(R.id.container),
-                                        R.string.problem_fragment_error_failure_delete)
-                            } })
+                    ui(jobList, { showSnackbar(activity.findViewById(R.id.container), R.string.problem_fragment_error_failure_delete) }) {
+                        val deleteNum = async {
+                            OrmaProvider.db.deleteFromDraftProblem()
+                                    .idEq(id)
+                                    .execute()
+                        }.await()
+
+                        if (deleteNum > 0) {
+                            showSnackbar(activity.findViewById(R.id.container),
+                                    R.string.problem_fragment_message_complete_delete)
+                            adapter.removeDraftProblemsByIndex(position)
+                        } else {
+                            showSnackbar(activity.findViewById(R.id.container),
+                                    R.string.problem_fragment_error_failure_delete)
+                        }
+                    }
                 }
             }
         })
     }
 
     private fun fetchDraftProblems() {
-        adapter.clearDraftProblems()
-        val draftProblems = OrmaProvider.db.selectFromDraftProblem().orderBy("editedAt").toList()
-        adapter.addDraftProblems(draftProblems)
+        ui(jobList) {
+            async { adapter.clearDraftProblems() }.await()
+            val draftProblems = async { OrmaProvider.db.selectFromDraftProblem().orderBy("editedAt").toList() }.await()
+            adapter.addDraftProblems(draftProblems)
+        }
     }
 }

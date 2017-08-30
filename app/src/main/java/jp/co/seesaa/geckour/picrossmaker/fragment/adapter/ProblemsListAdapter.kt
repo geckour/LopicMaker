@@ -3,7 +3,6 @@ package jp.co.seesaa.geckour.picrossmaker.fragment.adapter
 import android.databinding.DataBindingUtil
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.ItemProblemBinding
@@ -62,14 +61,11 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
         val pos = holder.adapterPosition
         val problem = problems[pos]
         holder.bindData(problem)
-
-        holder.itemView.setOnClickListener { listener.onClickProblemItem(pos) }
-        holder.itemView.setOnLongClickListener { listener.onLongClickProblemItem(pos) }
     }
 
     override fun getItemCount(): Int = problems.size
 
-    class ViewHolder(private val binding: ItemProblemBinding): RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: ItemProblemBinding): RecyclerView.ViewHolder(binding.root) {
 
         fun bindData(problem: Problem) {
             binding.thumb.setImageBitmap(problem.thumb)
@@ -78,12 +74,14 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
                     .getString(R.string.problem_fragment_item_point,
                             problem.keysVertical.keys.size,
                             problem.keysHorizontal.keys.size)
+            binding.root.setOnClickListener { listener.onClickProblemItem(problem) }
+            binding.root.setOnLongClickListener { listener.onLongClickProblemItem(problem) }
         }
     }
 
     interface IListener {
-        fun onClickProblemItem(position: Int)
-        fun onLongClickProblemItem(position: Int): Boolean
+        fun onClickProblemItem(problem: Problem)
+        fun onLongClickProblemItem(problem: Problem): Boolean
         fun onBind()
         fun onAllUnbind()
     }

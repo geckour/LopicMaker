@@ -1,5 +1,6 @@
 package jp.co.seesaa.geckour.picrossmaker.fragment
 
+import android.content.Context
 import android.content.DialogInterface
 import android.databinding.DataBindingUtil
 import android.graphics.Point
@@ -7,17 +8,17 @@ import android.graphics.PointF
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
-import android.support.design.widget.NavigationView
 import android.text.TextUtils
-import android.util.Log
 import android.util.Size
 import android.view.*
 import com.github.yamamotoj.pikkel.Pikkel
 import com.github.yamamotoj.pikkel.PikkelDelegate
-import com.trello.rxlifecycle2.components.support.RxFragment
+import com.trello.rxlifecycle2.components.RxFragment
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
+import jp.co.seesaa.geckour.picrossmaker.App
+import jp.co.seesaa.geckour.picrossmaker.Constant
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentEditorBinding
@@ -29,11 +30,10 @@ import jp.co.seesaa.geckour.picrossmaker.util.Algorithm
 import jp.co.seesaa.geckour.picrossmaker.util.CanvasUtil
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
-import timber.log.Timber
-import java.util.*
+import kotlin.collections.ArrayList
 
-class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
-    lateinit var listener: IListener
+class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by PikkelDelegate() {
+    private var listener: IListener? = null
     private val size by state(Point(0, 0))
     private var draftId by state(-1L)
     private var problemId by state(-1L)
@@ -47,35 +47,31 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
         fun onCanvasSizeError(size: Size)
     }
 
-    constructor(listener: IListener): this() {
-        this.listener = listener
-    }
-
     companion object {
-        fun newInstance(size: Size, argStr: String, listener: IListener): EditorFragment? {
+        fun newInstance(size: Size, listener: IListener): EditorFragment? {
             if (size.width < 1 || size.height < 1) {
                 listener.onCanvasSizeError(size)
                 return null
             }
-            val fragment = EditorFragment(listener)
-            val args = Bundle()
-            args.putSize(argStr, size)
-            fragment.arguments = args
-            return fragment
+            return EditorFragment().apply {
+                arguments = Bundle().apply {
+                    putSize(Constant.ARGS_FRAGMENT_CANVAS_SIZE, size)
+                }
+            }
         }
 
-        fun newInstance(id: Long, argStr: String, listener: IListener): EditorFragment? {
+        fun newInstance(id: Long, argStr: String): EditorFragment? {
             if (id > 0) {
-                val fragment = EditorFragment(listener)
-                val args = Bundle()
-                args.putLong(argStr, id)
-                fragment.arguments = args
-                return fragment
+                return EditorFragment().apply {
+                    arguments = Bundle().apply {
+                        putLong(argStr, id)
+                    }
+                }
             }
             return null
         }
 
-        val TAG = "editorFragment"
+        val TAG = this::class.java.simpleName
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,10 +79,10 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
 
         setHasOptionsMenu(true)
 
-        this.draftId = arguments.getLong(R.string.fragment_argument_draft_id.toString(), -1)
-        this.problemId = arguments.getLong(R.string.fragment_argument_problem_id.toString(), -1)
-        if (this.draftId < 0 && this.problemId < 0) {
-            val size = arguments.getSize(R.string.fragment_argument_canvas_size.toString())
+        this.draftId = if (arguments.containsKey(Constant.ARGS_FRAGMENT_DRAFT_ID)) arguments.getLong(Constant.ARGS_FRAGMENT_DRAFT_ID, -1) else -1
+        this.problemId = if (arguments.containsKey(Constant.ARGS_FRAGMENT_PROBLEM_ID)) arguments.getLong(Constant.ARGS_FRAGMENT_PROBLEM_ID, -1) else -1
+        if (this.draftId < 0 && this.problemId < 0 && arguments.containsKey(Constant.ARGS_FRAGMENT_CANVAS_SIZE)) {
+            val size = arguments.getSize(Constant.ARGS_FRAGMENT_CANVAS_SIZE)
             this.size.set(size.width, size.height)
         }
     }
@@ -105,58 +101,60 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        if (activity is MainActivity) {
-            this.listener = (activity as MainActivity).editorFragmentListener
-        }
-
-        if (draftId > -1) {
-            val title = OrmaProvider.db.selectFromDraftProblem().idEq(draftId).value().title
-            (activity as MainActivity).supportActionBar?.setTitle(getString(R.string.action_bar_title_edit_with_title, title))
-        } else if (problemId > -1) {
-            val title = OrmaProvider.db.selectFromProblem().idEq(problemId).value().title
-            (activity as MainActivity).supportActionBar?.setTitle(getString(R.string.action_bar_title_edit_with_title, title))
-        } else {
-            (activity as MainActivity).supportActionBar?.setTitle(R.string.action_bar_title_edit)
-        }
-
-        val fab = activity.findViewById(R.id.fab) as FloatingActionButton
-        fab.tag = true
-        fab.setImageResource(R.drawable.ic_crop_free_white_24px)
-        fab.setOnClickListener {
-            view ->
-            run {
-                val mode = view.tag as Boolean
-                (view as FloatingActionButton).setImageResource(if (mode) R.drawable.ic_edit_white_24px else R.drawable.ic_crop_free_white_24px)
-                view.tag = !mode
+        when {
+            draftId > -1 -> {
+                OrmaProvider.db.selectFromDraftProblem().idEq(draftId).valueOrNull()?.let {
+                    (activity as? MainActivity)?.actionBar?.setTitle(getString(R.string.action_bar_title_edit_with_title, it.title))
+                }
             }
+            problemId > -1 -> {
+                OrmaProvider.db.selectFromProblem().idEq(problemId).valueOrNull()?.let {
+                    (activity as? MainActivity)?.actionBar?.setTitle(getString(R.string.action_bar_title_edit_with_title, it.title))
+                }
+            }
+            else -> (activity as? MainActivity)?.actionBar?.setTitle(R.string.action_bar_title_edit)
         }
 
-        binding.canvas.setOnTouchListener { view, event -> onTouchCanvas(event) }
-        binding.cover.setOnTouchListener { view, event ->
-            run {
-                return@run if (!getMode()) {
-                    when (event.action) {
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
-                            pointPrev0.set(-1f, -1f)
-                            pointPrev1.set(-1f, -1f)
-                            true
-                        }
-
-                        else -> {
-                            val p0 = PointF(event.getX(0), event.getY(0))
-                            if (event.pointerCount > 1) {
-                                val p1 = PointF(event.getX(1), event.getY(1))
-                                onScale(p0, p1)
-                            }
-                            else onDrag(p0)
-                        }
+        (activity as MainActivity).binding.appBarMain.fab
+                .apply {
+                    tag = true
+                    setImageResource(R.drawable.ic_crop_free_white_24px)
+                    setOnClickListener {
+                        val mode = it.tag as Boolean
+                        (it as FloatingActionButton).setImageResource(if (mode) R.drawable.ic_edit_white_24px else R.drawable.ic_crop_free_white_24px)
+                        it.tag = !mode
                     }
-                } else false
-            }
+                }
+
+        binding.canvas.setOnTouchListener { _, event -> onTouchCanvas(event) }
+        binding.cover.setOnTouchListener { _, event ->
+            return@setOnTouchListener if (!getMode()) {
+                when (event.action) {
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                        pointPrev0.set(-1f, -1f)
+                        pointPrev1.set(-1f, -1f)
+                        true
+                    }
+
+                    else -> {
+                        val p0 = PointF(event.getX(0), event.getY(0))
+                        if (event.pointerCount > 1) {
+                            val p1 = PointF(event.getX(1), event.getY(1))
+                            onScale(p0, p1)
+                        }
+                        else onDrag(p0)
+                    }
+                }
+            } else false
         }
 
-        val nav = activity.findViewById(R.id.nav_view) as NavigationView
-        nav.menu.findItem(R.id.nav_editor).isChecked = true
+        (activity as MainActivity).binding.navView.menu.findItem(R.id.nav_editor).isChecked = true
+    }
+
+    override fun onAttach(context: Context?) {
+        super.onAttach(context)
+
+        listener = activity as? IListener
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -187,11 +185,65 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
 
     override fun onSaveInstanceState(outState: Bundle?) {
         super.onSaveInstanceState(outState)
-        outState?.putParcelableArrayList(CanvasUtil.BUNDLE_NAME_CELLS, algorithm.cells)
+        outState?.putStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS, ArrayList(algorithm.cells.map { App.gson.toJson(it) }))
         saveInstanceState(outState)
     }
 
-    fun onScale (pointCurrent0: PointF, pointCurrent1: PointF): Boolean {
+    override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: MyAlertDialogFragment.RequestCode, resultCode: Int, result: Any?) {
+        when (resultCode) {
+            DialogInterface.BUTTON_POSITIVE -> {
+                onPositive(requestCode, result)
+            }
+        }
+    }
+
+    private fun onPositive(requestCode: MyAlertDialogFragment.RequestCode, result: Any?) {
+        when (requestCode) {
+            MyAlertDialogFragment.RequestCode.SAVE_PROBLEM -> {
+                if (result != null && result is String && !TextUtils.isEmpty(result)) {
+                    OrmaProvider.db.prepareInsertIntoProblemAsSingle()
+                            .subscribeOn(Schedulers.newThread())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .map { inserter -> inserter.execute { createProblem(result) } }
+                            .compose(this@EditorFragment.bindToLifecycle<Long>())
+                            .subscribe(
+                                    { showSnackbar(activity.findViewById(R.id.container),
+                                            R.string.editor_fragment_message_complete_save) },
+                                    { throwable ->
+                                        throwable.printStackTrace()
+                                        showSnackbar(activity.findViewById(R.id.container),
+                                                R.string.editor_fragment_error_failure_save) })
+                } else {
+                    showSnackbar(activity.findViewById(R.id.container),
+                            R.string.editor_fragment_error_invalid_title)
+                }
+            }
+
+            MyAlertDialogFragment.RequestCode.SAVE_DRAFT_PROBLEM -> {
+                if (result != null && result is String && !TextUtils.isEmpty(result)) {
+                    OrmaProvider.db.prepareInsertIntoDraftProblemAsSingle()
+                            .subscribeOn(Schedulers.newThread())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .map { inserter -> inserter.execute { createDraftProblem(result) } }
+                            .compose(this@EditorFragment.bindToLifecycle<Long>())
+                            .subscribe(
+                                    { showSnackbar(activity.findViewById(R.id.container),
+                                            R.string.editor_fragment_message_complete_save) },
+                                    { throwable ->
+                                        throwable.printStackTrace()
+                                        showSnackbar(activity.findViewById(R.id.container),
+                                                R.string.editor_fragment_error_failure_save) })
+                } else {
+                    showSnackbar(activity.findViewById(R.id.container),
+                            R.string.editor_fragment_error_invalid_title)
+                }
+            }
+
+            else -> {}
+        }
+    }
+
+    private fun onScale (pointCurrent0: PointF, pointCurrent1: PointF): Boolean {
         if (pointPrev0.x < 0f) pointPrev0.set(pointCurrent0)
         if (pointPrev1.x < 0f) pointPrev1.set(pointCurrent1)
         val scale = algorithm.getScale(algorithm.getPointDiff(pointPrev0, pointPrev1).length(), algorithm.getPointDiff(pointCurrent0, pointCurrent1).length())
@@ -207,7 +259,7 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
         return true
     }
 
-    fun onDrag(pointCurrent0: PointF): Boolean {
+    private fun onDrag(pointCurrent0: PointF): Boolean {
         if (pointPrev0.x < 0f) pointPrev0.set(pointCurrent0)
         val diff = algorithm.getPointDiff(pointPrev0, pointCurrent0)
         binding.canvas.translationX = binding.canvas.translationX.plus(diff.x)
@@ -216,7 +268,7 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
         return true
     }
 
-    fun onTouchCanvas(event: MotionEvent): Boolean {
+    private fun onTouchCanvas(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                 pointPrev0.set(-1f, -1f)
@@ -262,122 +314,77 @@ class EditorFragment(): RxFragment(), Pikkel by PikkelDelegate() {
         return true
     }
 
-    fun getMode(): Boolean {
-        return (activity.findViewById(R.id.fab) as FloatingActionButton).tag as Boolean
-    }
+    private fun getMode(): Boolean =
+            (activity as MainActivity).binding.appBarMain.fab.tag as Boolean
 
-    fun onRefresh(savedInstanceState: Bundle?) {
-        if (this.draftId > -1) {
-            val draftProblem = OrmaProvider.db.selectFromDraftProblem().idEq(this.draftId).value()
-            this.size.set(draftProblem.keysVertical.keys.size, draftProblem.keysHorizontal.keys.size)
-            this.algorithm = Algorithm(size)
-            val bitmap = this.algorithm.setCells(
-                    if (savedInstanceState == null) draftProblem.catalog.cells
-                    else savedInstanceState.getParcelableArrayList(CanvasUtil.BUNDLE_NAME_CELLS))
-            binding.canvas.setImageBitmap(bitmap)
-        } else if (this.problemId > -1) {
-            val problem = OrmaProvider.db.selectFromProblem().idEq(this.problemId).value()
-            this.size.set(problem.keysVertical.keys.size, problem.keysHorizontal.keys.size)
-            this.algorithm = Algorithm(size)
-            val bitmap = this.algorithm.setCells(
-                    if (savedInstanceState == null) problem.catalog.cells
-                    else savedInstanceState.getParcelableArrayList(CanvasUtil.BUNDLE_NAME_CELLS))
-            binding.canvas.setImageBitmap(bitmap)
-        } else {
-            this.algorithm = Algorithm(size)
-            binding.canvas.setImageBitmap(algorithm.createCanvasImage())
+    private fun onRefresh(savedInstanceState: Bundle?) {
+        when {
+            this.draftId > -1 -> {
+                OrmaProvider.db.selectFromDraftProblem().idEq(this.draftId).valueOrNull()?.let {
+                    this.size.set(it.keysVertical.keys.size, it.keysHorizontal.keys.size)
+                    this.algorithm = Algorithm(size)
+                    val bitmap = this.algorithm.setCells(
+                            savedInstanceState?.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) } ?: it.catalog.cells)
+                    binding.canvas.setImageBitmap(bitmap)
+                }
+            }
+            this.problemId > -1 -> {
+                OrmaProvider.db.selectFromProblem().idEq(this.problemId).valueOrNull()?.let {
+                    this.size.set(it.keysVertical.keys.size, it.keysHorizontal.keys.size)
+                    this.algorithm = Algorithm(size)
+                    val bitmap = this.algorithm.setCells(
+                            savedInstanceState?.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) } ?: it.catalog.cells)
+                    binding.canvas.setImageBitmap(bitmap)
+                }
+            }
+            else -> {
+                this.algorithm = Algorithm(size)
+                binding.canvas.setImageBitmap(algorithm.createCanvasImage())
+            }
         }
     }
 
-    fun onSaveCanvas() {
-        val fragment = MyAlertDialogFragment.Builder(object: MyAlertDialogFragment.IListener {
-            override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: Int, resultCode: Int, result: Any?) {
-                when (resultCode) {
-                    DialogInterface.BUTTON_POSITIVE -> {
-                        onPositive(requestCode, result)
-                    }
-                }
-            }
+    private fun onSaveCanvas() {
+        val requestCode = if (isSolvable) MyAlertDialogFragment.RequestCode.SAVE_PROBLEM else MyAlertDialogFragment.RequestCode.SAVE_DRAFT_PROBLEM
+        val fragment = MyAlertDialogFragment.newInstance(
+                resId = R.layout.dialog_define_title,
+                title = getString(if (isSolvable) R.string.dialog_alert_title_save_problem else R.string.dialog_alert_title_save_draft_problem),
+                message = getString(if (isSolvable) R.string.dialog_alert_message_save_problem else R.string.dialog_alert_message_save_draft_problem),
+                requestCode = requestCode,
+                cancelable = true,
+                targetFragment = this
+        )
 
-            fun onPositive(requestCode: Int, result: Any?) {
-                when (requestCode) {
-                    MyAlertDialogFragment.Builder.REQUEST_CODE_SAVE_PROBLEM -> {
-                        if (result != null && result is String && !TextUtils.isEmpty(result)) {
-                            OrmaProvider.db.prepareInsertIntoProblemAsSingle()
-                                    .subscribeOn(Schedulers.newThread())
-                                    .observeOn(AndroidSchedulers.mainThread())
-                                    .map { inserter -> inserter.execute { createProblem(result) } }
-                                    .compose(this@EditorFragment.bindToLifecycle<Long>())
-                                    .subscribe(
-                                            { showSnackbar(activity.findViewById(R.id.container),
-                                                        R.string.editor_fragment_message_complete_save) },
-                                            { throwable ->
-                                                throwable.printStackTrace()
-                                                showSnackbar(activity.findViewById(R.id.container),
-                                                        R.string.editor_fragment_error_failure_save) })
-                        } else {
-                            showSnackbar(activity.findViewById(R.id.container),
-                                    R.string.editor_fragment_error_invalid_title)
-                        }
-                    }
-
-                    MyAlertDialogFragment.Builder.REQUEST_CODE_SAVE_DRAFT_PROBLEM -> {
-                        if (result != null && result is String && !TextUtils.isEmpty(result)) {
-                            OrmaProvider.db.prepareInsertIntoDraftProblemAsSingle()
-                                    .subscribeOn(Schedulers.newThread())
-                                    .observeOn(AndroidSchedulers.mainThread())
-                                    .map { inserter -> inserter.execute { createDraftProblem(result) } }
-                                    .compose(this@EditorFragment.bindToLifecycle<Long>())
-                                    .subscribe(
-                                            { showSnackbar(activity.findViewById(R.id.container),
-                                                    R.string.editor_fragment_message_complete_save) },
-                                            { throwable ->
-                                                throwable.printStackTrace()
-                                                showSnackbar(activity.findViewById(R.id.container),
-                                                        R.string.editor_fragment_error_failure_save) })
-                        } else {
-                            showSnackbar(activity.findViewById(R.id.container),
-                                    R.string.editor_fragment_error_invalid_title)
-                        }
-                    }
-                }
-            }
-        }, this)
-                .setLayout(R.layout.dialog_define_title)
-                .setTitle(getString(if (isSolvable) R.string.dialog_alert_title_save_problem else R.string.dialog_alert_title_save_draft_problem))
-                .setMessage(getString(if (isSolvable) R.string.dialog_alert_message_save_problem else R.string.dialog_alert_message_save_draft_problem))
-                .setRequestCode(if (isSolvable) MyAlertDialogFragment.Builder.REQUEST_CODE_SAVE_PROBLEM else MyAlertDialogFragment.Builder.REQUEST_CODE_SAVE_DRAFT_PROBLEM)
-                .setCancelable(true)
-                .commit()
-
-        fragment.show((activity as MainActivity).supportFragmentManager, if (isSolvable) MyAlertDialogFragment.Builder.TAG_SAVE_PROBLEM else MyAlertDialogFragment.Builder.TAG_SAVE_DRAFT_PROBLEM)
+        (activity as? MainActivity)?.let {
+            fragment.show(it.fragmentManager, MyAlertDialogFragment.getTag(requestCode))
+        }
     }
 
-    fun createProblem(title: String): Problem {
+    private fun createProblem(title: String): Problem {
         val thumb = algorithm.getThumbnailImage()
         val keysInRow: ArrayList<List<Int>> = ArrayList()
-        (0..algorithm.size.y - 1).forEach {
+        (0 until algorithm.size.y).forEach {
             keysInRow.add(algorithm.getKeys(algorithm.getCellsInRow(it) ?: return@forEach))
         }
         val keysInColumn: ArrayList<List<Int>> = ArrayList()
-        (0..algorithm.size.x - 1).forEach {
+        (0 until algorithm.size.x).forEach {
             keysInColumn.add(algorithm.getKeys(algorithm.getCellsInColumn(it) ?: return@forEach))
         }
 
-        return Problem(-1L, title, Problem.Companion.KeysCluster(*(keysInRow.toTypedArray())), Problem.Companion.KeysCluster(*(keysInColumn.toTypedArray())), thumb, Cell.Companion.Catalog(algorithm.cells))
+        return Problem(-1L, title, Problem.KeysCluster(*(keysInRow.toTypedArray())), Problem.KeysCluster(*(keysInColumn.toTypedArray())), thumb, catalog = Cell.Catalog(algorithm.cells))
     }
 
-    fun createDraftProblem(title: String): DraftProblem {
+    private fun createDraftProblem(title: String): DraftProblem {
         val thumb = algorithm.getThumbnailImage()
         val keysInRow: ArrayList<List<Int>> = ArrayList()
-        (0..algorithm.size.y - 1).forEach {
+        (0 until algorithm.size.y).forEach {
             keysInRow.add(algorithm.getKeys(algorithm.getCellsInRow(it) ?: return@forEach))
         }
         val keysInColumn: ArrayList<List<Int>> = ArrayList()
-        (0..algorithm.size.x - 1).forEach {
+        (0 until algorithm.size.x).forEach {
             keysInColumn.add(algorithm.getKeys(algorithm.getCellsInColumn(it) ?: return@forEach))
         }
 
-        return DraftProblem(-1L, title, Problem.Companion.KeysCluster(*(keysInRow.toTypedArray())), Problem.Companion.KeysCluster(*(keysInColumn.toTypedArray())), thumb, Cell.Companion.Catalog(algorithm.cells))
+        return DraftProblem(-1L, title, Problem.KeysCluster(*(keysInRow.toTypedArray())), Problem.KeysCluster(*(keysInColumn.toTypedArray())), thumb, catalog = Cell.Catalog(algorithm.cells))
     }
 }

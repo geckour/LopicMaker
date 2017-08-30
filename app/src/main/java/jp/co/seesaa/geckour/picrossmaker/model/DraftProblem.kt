@@ -10,20 +10,13 @@ import java.sql.Timestamp
 import java.util.*
 
 @Table
-data class DraftProblem(@Setter("id") @PrimaryKey(autoincrement = true) val id: Long,
-                        @Setter("title") @Column var title: String,
-                        @Setter("keys_horizontal") @Column val keysHorizontal: Problem.Companion.KeysCluster,
-                        @Setter("keys_vertical") @Column val keysVertical: Problem.Companion.KeysCluster,
-                        @Setter("thumb") @Column @Nullable var thumb: Bitmap?,
-                        @Setter("created_at") @Column val createdAt: Timestamp,
-                        @Setter("edited_at") @Column var editedAt: Timestamp,
-                        @Setter("catalog") @Column var catalog: Cell.Companion.Catalog) {
-
-    constructor(id: Long = -1L,
-                title: String = "no title",
-                keysHorizontal: Problem.Companion.KeysCluster = Problem.Companion.KeysCluster(),
-                keysVertical: Problem.Companion.KeysCluster = Problem.Companion.KeysCluster(),
-                thumb: Bitmap? = null,
-                catalog: Cell.Companion.Catalog = Cell.Companion.Catalog(ArrayList<Cell>())):
-            this(id, title, keysHorizontal, keysVertical, thumb, Timestamp(System.currentTimeMillis()), Timestamp(System.currentTimeMillis()), catalog)
-}
+data class DraftProblem(
+        @Setter("id") @PrimaryKey(autoincrement = true) val id: Long = -1L,
+        @Setter("title") @Column var title: String = "no title",
+        @Setter("keys_horizontal") @Column val keysHorizontal: Problem.KeysCluster = Problem.KeysCluster(),
+        @Setter("keys_vertical") @Column val keysVertical: Problem.KeysCluster = Problem.KeysCluster(),
+        @Setter("thumb") @Column @Nullable var thumb: Bitmap? = null,
+        @Setter("created_at") @Column val createdAt: Timestamp = Timestamp(System.currentTimeMillis()),
+        @Setter("edited_at") @Column var editedAt: Timestamp = Timestamp(System.currentTimeMillis()),
+        @Setter("catalog") @Column var catalog: Cell.Catalog = Cell.Catalog(ArrayList())
+)

@@ -1,54 +1,41 @@
 package jp.co.seesaa.geckour.picrossmaker.activity
 
 import android.content.DialogInterface
+import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
-import android.support.v4.widget.DrawerLayout
-import android.support.v7.app.ActionBarDrawerToggle
-import android.support.v7.widget.Toolbar
 import android.util.Size
 import android.view.Menu
 import android.view.MenuItem
-import com.trello.rxlifecycle2.components.support.RxAppCompatActivity
+import com.trello.rxlifecycle2.components.RxActivity
 import jp.co.seesaa.geckour.picrossmaker.fragment.ProblemsFragment
 import jp.co.seesaa.geckour.picrossmaker.R
+import jp.co.seesaa.geckour.picrossmaker.databinding.ActivityMainBinding
 import jp.co.seesaa.geckour.picrossmaker.fragment.DraftProblemsFragment
 import jp.co.seesaa.geckour.picrossmaker.fragment.EditorFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
-import timber.log.Timber
 
-class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
-    lateinit var alertDialogListener: MyAlertDialogFragment.IListener
-    lateinit var editorFragmentListener: EditorFragment.IListener
+class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListener, EditorFragment.IListener, MyAlertDialogFragment.IListener {
+
+    lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        val toolbar = findViewById(R.id.toolbar) as Toolbar
-        setSupportActionBar(toolbar)
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+        setActionBar(binding.appBarMain.toolbar)
 
-        val drawer = findViewById(R.id.drawer_layout) as DrawerLayout
-        val toggle = ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
-        drawer.addDrawerListener(toggle)
-        toggle.syncState()
-
-        val navigationView = findViewById(R.id.nav_view) as NavigationView
-        navigationView.setNavigationItemSelectedListener(this)
-
-        this.alertDialogListener = createAlertDialogListenerForEditor()
-        this.editorFragmentListener = createEditorFragmentListener()
+        binding.navView.setNavigationItemSelectedListener(this)
 
         if (savedInstanceState == null) {
             val fragment = ProblemsFragment.newInstance()
-            supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+            fragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
         }
     }
 
     override fun onBackPressed() {
-        val drawer = findViewById(R.id.drawer_layout) as DrawerLayout
+        val drawer = binding.drawerLayout
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START)
         } else {
@@ -69,46 +56,23 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
         when (id) {
             R.id.nav_problem -> {
                 val fragment = ProblemsFragment.newInstance()
-                supportFragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(null).commit()
+                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(null).commit()
             }
 
             R.id.nav_draft -> {
                 val fragment = DraftProblemsFragment.newInstance()
-                supportFragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(null).commit()
+                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(null).commit()
             }
 
             R.id.nav_editor -> {
-                val fragment = MyAlertDialogFragment.Builder(object: MyAlertDialogFragment.IListener {
-                    override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: Int, resultCode: Int, result: Any?) {
-                        when (resultCode) {
-                            DialogInterface.BUTTON_POSITIVE ->
-                                onPositive(requestCode, result)
-                        }
-                        dialogInterface.dismiss()
-                    }
-
-                    fun onPositive(requestCode: Int, result: Any?) {
-                        when (requestCode) {
-                            MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE -> {
-                                if (result != null && result is Size) {
-                                    val fragment = EditorFragment.newInstance(result, R.string.fragment_argument_canvas_size.toString(), editorFragmentListener)
-                                    if (fragment != null) {
-                                        supportFragmentManager.beginTransaction()
-                                                .replace(R.id.container, fragment)
-                                                .addToBackStack(null)
-                                                .commit()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }, this)
-                        .setTitle(getString(R.string.dialog_alert_title_size_define))
-                        .setLayout(R.layout.dialog_define_size)
-                        .setRequestCode(MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE)
-                        .setCancelable(true)
-                        .commit()
-                fragment.show(supportFragmentManager, MyAlertDialogFragment.Builder.TAG_DEFINE_SIZE)
+                val requestCode = MyAlertDialogFragment.RequestCode.DEFINE_SIZE
+                val fragment = MyAlertDialogFragment.newInstance(
+                        title = getString(R.string.dialog_alert_title_size_define),
+                        resId = R.layout.dialog_define_size,
+                        requestCode = requestCode,
+                        cancelable = true
+                )
+                fragment.show(fragmentManager, MyAlertDialogFragment.getTag(requestCode))
             }
 
             R.id.nav_setting -> {
@@ -120,40 +84,36 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
             }
         }
 
-        (findViewById(R.id.drawer_layout) as DrawerLayout).closeDrawer(GravityCompat.START)
+        binding.drawerLayout.closeDrawer(GravityCompat.START)
         return true
     }
 
-    fun createAlertDialogListenerForEditor() = object: MyAlertDialogFragment.IListener {
-        override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: Int, resultCode: Int, result: Any?) {
-            when (resultCode) {
-                DialogInterface.BUTTON_POSITIVE ->
-                    onPositive(requestCode, result)
-            }
-            dialogInterface.dismiss()
-        }
+    override fun onCanvasSizeError(size: Size) {
+        showSnackbar(binding.appBarMain.contentMain.container, R.string.problem_fragment_error_invalid_size)
+    }
 
-        fun onPositive(requestCode: Int, result: Any?) {
-            when (requestCode) {
-                MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE -> {
-                    if (result != null && result is Size) {
-                        val fragment = EditorFragment.newInstance(result, R.string.fragment_argument_canvas_size.toString(), editorFragmentListener)
-                        if (fragment != null) {
-                            supportFragmentManager.beginTransaction()
-                                    .replace(R.id.container, fragment)
-                                    .addToBackStack(null)
-                                    .commit()
-                        }
+    override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: MyAlertDialogFragment.RequestCode, resultCode: Int, result: Any?) {
+        when (resultCode) {
+            DialogInterface.BUTTON_POSITIVE ->
+                onPositive(requestCode, result)
+        }
+        dialogInterface.dismiss()
+    }
+
+    private fun onPositive(requestCode: MyAlertDialogFragment.RequestCode, result: Any?) {
+        when (requestCode) {
+            MyAlertDialogFragment.RequestCode.DEFINE_SIZE -> {
+                (result as? Size)?.let {
+                    val fragment = EditorFragment.newInstance(it, this@MainActivity)
+                    if (fragment != null) {
+                        fragmentManager.beginTransaction()
+                                .replace(R.id.container, fragment)
+                                .addToBackStack(null)
+                                .commit()
                     }
                 }
             }
-        }
-    }
-
-    fun createEditorFragmentListener() = object : EditorFragment.IListener {
-        override fun onCanvasSizeError(size: Size) {
-            showSnackbar(findViewById(R.id.container),
-                    R.string.problem_fragment_error_invalid_size)
+            else -> {}
         }
     }
 }

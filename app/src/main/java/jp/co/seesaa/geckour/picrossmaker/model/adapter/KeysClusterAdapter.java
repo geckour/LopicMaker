@@ -5,7 +5,7 @@ import android.support.annotation.NonNull;
 import com.github.gfx.android.orma.annotation.StaticTypeAdapter;
 import com.google.gson.Gson;
 
-import jp.co.seesaa.geckour.picrossmaker.model.Problem.Companion.KeysCluster;
+import jp.co.seesaa.geckour.picrossmaker.model.Problem.KeysCluster;
 
 @StaticTypeAdapter(targetType = KeysCluster.class, serializedType = String.class)
 public class KeysClusterAdapter {

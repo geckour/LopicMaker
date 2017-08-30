@@ -1,144 +1,107 @@
 package jp.co.seesaa.geckour.picrossmaker.util
 
 import android.app.*
+import android.content.Context
 import android.content.DialogInterface
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.design.widget.Snackbar
-import android.util.Log
 import android.util.Size
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
-import android.widget.EditText
-import com.trello.rxlifecycle2.components.support.RxAppCompatDialogFragment
-import com.trello.rxlifecycle2.components.support.RxFragment
+import com.trello.rxlifecycle2.components.RxDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.DialogDefineSizeBinding
 import jp.co.seesaa.geckour.picrossmaker.databinding.DialogDefineTitleBinding
 import timber.log.Timber
 
-class MyAlertDialogFragment(val listener: IListener) : RxAppCompatDialogFragment() {
+class MyAlertDialogFragment : RxDialogFragment() {
+
+    enum class RequestCode {
+        DEFINE_SIZE,
+        SAVE_PROBLEM,
+        SAVE_DRAFT_PROBLEM,
+        UNKNOWN
+    }
+
     companion object {
+        private const val ARGS_TITLE = "title"
+        private const val ARGS_MESSAGE = "message"
+        private const val ARGS_RES_ID = "resId"
+        private const val ARGS_REQUEST_CODE = "requestCode"
+        private const val ARGS_CANCELABLE = "cancelable"
+
+        fun newInstance(
+                title: String = "",
+                message: String = "",
+                requestCode: RequestCode? = null,
+                resId: Int? = null,
+                cancelable: Boolean = true,
+                targetFragment: Fragment? = null
+        ): MyAlertDialogFragment = MyAlertDialogFragment()
+                .apply {
+                    arguments = Bundle().apply {
+                        putString(ARGS_TITLE, title)
+                        putString(ARGS_MESSAGE, message)
+                        requestCode?.let { putSerializable(ARGS_REQUEST_CODE, it) }
+                        putInt(ARGS_RES_ID, resId ?: -1)
+                        putBoolean(ARGS_CANCELABLE, cancelable)
+                    }
+                    if (targetFragment != null) setTargetFragment(targetFragment, requestCode?.ordinal ?: 0)
+                }
+
+        fun getTag(requestCode: RequestCode): String =
+                when (requestCode) {
+                    RequestCode.DEFINE_SIZE -> "myAlertDialogFragmentDefineSize"
+                    RequestCode.SAVE_DRAFT_PROBLEM -> "myAlertDialogFragmentSaveDraftProblem"
+                    RequestCode.SAVE_PROBLEM -> "myAlertDialogFragmentSaveProblem"
+                    else -> "myAlertDialogFragment"
+                }
+
         fun showSnackbar(view: View, resId: Int) {
             Snackbar.make(view,
                     resId,
                     Snackbar.LENGTH_SHORT).show()
         }
     }
-
-    private lateinit var sizeBinding: DialogDefineSizeBinding
-    private lateinit var titleBinding: DialogDefineTitleBinding
+    private var sizeBinding: DialogDefineSizeBinding? = null
+    private var titleBinding: DialogDefineTitleBinding? = null
+    private var listener: IListener? = null
 
     interface IListener {
-        fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: Int, resultCode: Int, result: Any? = null)
+        fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: RequestCode, resultCode: Int, result: Any? = null)
     }
 
-    class Builder(val listener: IListener, parent: Any) {
-        private var parentFragment: RxFragment? = null
-        private var parentActivity: Activity? = null
+    override fun onAttach(context: Context?) {
+        super.onAttach(context)
 
-        companion object {
-            val ARGS_TITLE = "title"
-            val ARGS_MESSAGE = "message"
-            val ARGS_RES_ID = "resId"
-            val ARGS_REQUEST_CODE = "requestCode"
-            val ARGS_CANCELABLE = "cancelable"
-            val TAG_DEFINE_SIZE = "defineSize"
-            val TAG_SAVE_PROBLEM = "saveProblem"
-            val TAG_SAVE_DRAFT_PROBLEM = "saveDraftProblem"
-            val REQUEST_CODE_DEFINE_SIZE = 1
-            val REQUEST_CODE_SAVE_PROBLEM = 2
-            val REQUEST_CODE_SAVE_DRAFT_PROBLEM = 3
-        }
-
-        init {
-            require(parent is Activity || parent is RxFragment)
-
-            if (parent is Activity) parentActivity = parent
-            if (parent is RxFragment) parentFragment = parent
-        }
-
-        private var title: String = ""
-        private var message: String = ""
-        private var resId: Int? = null
-        private var requestCode: Int = -1
-        private var cancelable: Boolean = true
-
-        fun setTitle(title: String): Builder {
-            this.title = title
-            return this
-        }
-
-        fun setMessage(message: String): Builder {
-            this.message = message
-            return this
-        }
-
-        fun setLayout(resId: Int): Builder {
-            this.resId = resId
-            return this
-        }
-
-        fun setRequestCode(requestCode: Int): Builder {
-            this.requestCode = requestCode
-            return this
-        }
-
-        fun setCancelable(cancelable: Boolean): Builder {
-            this.cancelable = cancelable
-            return this
-        }
-
-        fun commit(): MyAlertDialogFragment {
-            val args = Bundle()
-            args.putString(ARGS_TITLE, title)
-            args.putString(ARGS_MESSAGE, message)
-            args.putInt(ARGS_RES_ID, resId ?: -1)
-            args.putBoolean(ARGS_CANCELABLE, cancelable)
-
-            val fragment = MyAlertDialogFragment(listener)
-            if (parentFragment != null) {
-                fragment.setTargetFragment(parentFragment, requestCode)
-            } else {
-                args.putInt(ARGS_REQUEST_CODE, requestCode)
-            }
-
-            fragment.arguments = args
-            return fragment
-        }
+        listener = targetFragment as? IListener ?: activity as? IListener
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val resId = arguments.getInt(Builder.ARGS_RES_ID, -1)
-
         if (savedInstanceState == null) {
-            isCancelable = arguments.getBoolean(Builder.ARGS_CANCELABLE)
+            isCancelable = arguments.getBoolean(ARGS_CANCELABLE)
             val builder = AlertDialog.Builder(activity)
-                    .setTitle(arguments.getString(Builder.ARGS_TITLE))
-                    .setMessage(arguments.getString(Builder.ARGS_MESSAGE))
+                    .setTitle(arguments.getString(ARGS_TITLE))
+                    .setMessage(arguments.getString(ARGS_MESSAGE))
                     .setNegativeButton(
                             R.string.dialog_alert_cancel,
-                            { dialogInterface, which -> this.dismiss() })
+                            { dialog, _ -> dialog.dismiss() })
                     .setPositiveButton(
                             R.string.dialog_alert_confirm,
-                            { dialogInterface, which -> fireListener(dialogInterface, which) })
+                            { dialog, which -> fireListener(dialog, which) })
 
-            if (resId > 0) {
-                when (arguments.getInt(Builder.ARGS_RES_ID, -1)) {
-                    R.layout.dialog_define_size -> {
-                        val view = activity.layoutInflater.inflate(R.layout.dialog_define_size, null)
-                        sizeBinding = DataBindingUtil.bind(view)
-                        builder.setView(sizeBinding.root)
-                        return builder.create()
-                    }
+            when (arguments.getInt(ARGS_RES_ID, -1)) {
+                R.layout.dialog_define_size -> {
+                    sizeBinding = DataBindingUtil.inflate(LayoutInflater.from(activity), R.layout.dialog_define_size, null, false)
+                    sizeBinding?.let { builder.setView(it.root) }
+                    return builder.create()
+                }
 
-                    R.layout.dialog_define_title -> {
-                        val view = activity.layoutInflater.inflate(R.layout.dialog_define_title, null)
-                        titleBinding = DataBindingUtil.bind(view)
-                        builder.setView(titleBinding.root)
-                        return builder.create()
-                    }
+                R.layout.dialog_define_title -> {
+                    titleBinding = DataBindingUtil.inflate(LayoutInflater.from(activity), R.layout.dialog_define_title, null, false)
+                    titleBinding?.let { builder.setView(it.root) }
+                    return builder.create()
                 }
             }
         }
@@ -147,29 +110,30 @@ class MyAlertDialogFragment(val listener: IListener) : RxAppCompatDialogFragment
     }
 
     private fun fireListener(dialogInterface: DialogInterface, which: Int) {
-        listener.onResultAlertDialog(
+        listener?.onResultAlertDialog(
                 dialogInterface,
                 getRequestCode(),
                 which,
                 when (getRequestCode()) {
-                    Builder.REQUEST_CODE_DEFINE_SIZE -> {
+                    RequestCode.DEFINE_SIZE -> {
                         getSize()
                     }
-                    Builder.REQUEST_CODE_SAVE_PROBLEM, Builder.REQUEST_CODE_SAVE_DRAFT_PROBLEM -> {
+                    RequestCode.SAVE_DRAFT_PROBLEM, RequestCode.SAVE_PROBLEM -> {
                         getTitle()
                     }
                     else -> null
-                })
+                }
+        )
     }
 
-    private fun getRequestCode(): Int = if (arguments.containsKey(Builder.ARGS_REQUEST_CODE)) arguments.getInt(Builder.ARGS_REQUEST_CODE, -1) else targetRequestCode
+    private fun getRequestCode(): RequestCode = if (arguments.containsKey(ARGS_REQUEST_CODE)) arguments.getSerializable(ARGS_REQUEST_CODE) as RequestCode else RequestCode.UNKNOWN
 
     private fun getSize(): Size {
         var width: Int
         var height: Int
         try {
-            width = (dialog.findViewById(R.id.edit_text_size_width) as EditText).text.toString().toInt()
-            height = (dialog.findViewById(R.id.edit_text_size_height) as EditText).text.toString().toInt()
+            width = sizeBinding?.editTextSizeWidth?.text?.toString()?.toInt() ?: 0
+            height = sizeBinding?.editTextSizeHeight?.text?.toString()?.toInt() ?: 0
         } catch (e: NumberFormatException) {
             width = 0
             height = 0
@@ -179,7 +143,5 @@ class MyAlertDialogFragment(val listener: IListener) : RxAppCompatDialogFragment
         return Size(width, height)
     }
 
-    private fun getTitle(): String {
-        return (dialog.findViewById(R.id.edit_text_problem_title) as EditText).text.toString()
-    }
+    private fun getTitle(): String? = titleBinding?.editTextProblemTitle?.text?.toString()
 }

@@ -1,10 +1,9 @@
 package jp.co.seesaa.geckour.picrossmaker.util
 
 import android.graphics.*
-import android.util.Log
 import android.util.Size
 import android.widget.ImageView
-import jp.co.seesaa.geckour.picrossmaker.Constant.Companion.unit
+import jp.co.seesaa.geckour.picrossmaker.Constant.unit
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import java.util.*
 
@@ -22,13 +21,13 @@ open class CanvasUtil(val size: Point) {
         val BUNDLE_NAME_CELLS = "cells"
     }
 
-    fun initCells() {
+    private fun initCells() {
         initCells(this.cells)
     }
 
-    fun initCells(cells: ArrayList<Cell>) {
+    private fun initCells(cells: ArrayList<Cell>) {
         cells.clear()
-        for (i in 0..size.y - 1) (0..size.x - 1).mapTo(cells) { Cell(Point(it, i)) }
+        for (i in 0 until size.y) (0 until size.x).mapTo(cells) { Cell(Point(it, i)) }
     }
 
     fun setCells(cells: List<Cell>): Bitmap? {
@@ -42,7 +41,7 @@ open class CanvasUtil(val size: Point) {
         return bitmap
     }
 
-    fun getNumBlankArea(): Int {
+    private fun getNumBlankArea(): Int {
         val l = Math.max(size.x, size.y)
         return when {
             l in 1..2 -> 1
@@ -52,17 +51,11 @@ open class CanvasUtil(val size: Point) {
         }
     }
 
-    fun getPointDiff(p1: PointF, p2: PointF): PointF {
-        return PointF(p2.x - p1.x, p2.y - p1.y)
-    }
+    fun getPointDiff(p1: PointF, p2: PointF): PointF = PointF(p2.x - p1.x, p2.y - p1.y)
 
-    fun getScale(diff1: Float, diff2: Float): Float {
-        return if (diff1 == 0f) 1f else diff2 / diff1
-    }
+    fun getScale(diff1: Float, diff2: Float): Float = if (diff1 == 0f) 1f else diff2 / diff1
 
-    fun getPointMid(p1: PointF, p2: PointF): PointF {
-        return PointF((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
-    }
+    fun getPointMid(p1: PointF, p2: PointF): PointF = PointF((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
 
     fun getPointDistance(p1: PointF, p2: PointF): Float {
         val pointDIff = getPointDiff(p1, p2)
@@ -103,7 +96,7 @@ open class CanvasUtil(val size: Point) {
         paint.color = lineColor
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1f
-        for (i in 1..(sizeBlankArea.y + size.y) - 1) {
+        for (i in 1 until (sizeBlankArea.y + size.y)) {
             path = Path()
             if (i == sizeBlankArea.y) paint.color = Color.BLACK
 
@@ -116,7 +109,7 @@ open class CanvasUtil(val size: Point) {
 
             paint.color = lineColor
         }
-        for (i in 1..(sizeBlankArea.x + size.x) - 1) {
+        for (i in 1 until (sizeBlankArea.x + size.x)) {
             path = Path()
             if (i == sizeBlankArea.x) paint.color = Color.BLACK
 
@@ -141,10 +134,10 @@ open class CanvasUtil(val size: Point) {
 
         paint.color = Color.BLACK
         paint.textSize = unit.toFloat()
-        val bounds: Rect = Rect()
+        val bounds = Rect()
         paint.getTextBounds("0", 0, "0".length, bounds)
         val textBaseHeight = blankHeight - unit / 2 - ((paint.descent() + paint.ascent()) / 2)
-        for (i in 0..size.x - 1) {
+        for (i in 0 until size.x) {
             canvas.drawText("0", blankWidth + (i + 0.5f) * unit - bounds.exactCenterX(), textBaseHeight, paint)
         }
         val textBaseWidth = blankWidth - 0.5f * unit - bounds.exactCenterX()
@@ -173,7 +166,7 @@ open class CanvasUtil(val size: Point) {
         return if (refreshKeys) refreshKeys(image, cell) else image
     }
 
-    fun refreshCanvasSize(image: Bitmap, keysLengths: Size): Bitmap? {
+    private fun refreshCanvasSize(image: Bitmap, keysLengths: Size): Bitmap? {
         if (keysLengths.width > sizeBlankArea.x || keysLengths.height > sizeBlankArea.y) {
 
             sizeBlankArea.set(if (keysLengths.width > sizeBlankArea.x) keysLengths.width else sizeBlankArea.x,
@@ -190,7 +183,7 @@ open class CanvasUtil(val size: Point) {
         return null
     }
 
-    fun refreshAllKeys(image: Bitmap): Bitmap {
+    private fun refreshAllKeys(image: Bitmap): Bitmap {
         var bitmap = image
         val end = Math.max(size.x, size.y) - 1
         for (i in 0..end) {
@@ -201,17 +194,17 @@ open class CanvasUtil(val size: Point) {
         return bitmap
     }
 
-    fun refreshKeys(image: Bitmap, cell: Cell): Bitmap {
+    private fun refreshKeys(image: Bitmap, cell: Cell): Bitmap {
         val row = getCellsInRow(cell.coordinate.y) ?: return image
         val column = getCellsInColumn(cell.coordinate.x) ?: return image
         val keysRow = getKeys(row)
         val keysColumn = getKeys(column)
 
         var bitmap = refreshCanvasSize(image, Size(keysRow.size, keysColumn.size))
-        if (bitmap != null) {
-            bitmap = refreshAllKeys(bitmap)
+        bitmap = if (bitmap != null) {
+            refreshAllKeys(bitmap)
         } else {
-            bitmap = image
+            image
         }
         val canvas = Canvas(bitmap)
 
@@ -220,11 +213,11 @@ open class CanvasUtil(val size: Point) {
         paint.style = Paint.Style.FILL
         paint.textSize = unit.toFloat()
 
-        val bounds: Rect = Rect()
+        val bounds = Rect()
         val textBaseHeight = (sizeBlankArea.y + cell.coordinate.y + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
         val initialWidth = (sizeBlankArea.x - keysRow.size + 0.5f) * unit
         paint.color = Color.WHITE
-        for (i in 0..sizeBlankArea.x - 1) {
+        for (i in 0 until sizeBlankArea.x) {
             val path = Path()
             val left = i * unit + 1f
             val top = (sizeBlankArea.y + cell.coordinate.y) * unit + 1f
@@ -241,7 +234,7 @@ open class CanvasUtil(val size: Point) {
         val textBaseWidth = (sizeBlankArea.x + cell.coordinate.x + 0.5f) * unit
         val initialHeight = (sizeBlankArea.y - keysColumn.size + 0.5f) * unit - ((paint.descent() + paint.ascent()) / 2)
         paint.color = Color.WHITE
-        for (i in 0..sizeBlankArea.y - 1) {
+        for (i in 0 until sizeBlankArea.y) {
             val path = Path()
             val left = (sizeBlankArea.x + cell.coordinate.x) * unit + 1f
             val top = i * unit + 1f
@@ -276,19 +269,16 @@ open class CanvasUtil(val size: Point) {
         return keys
     }
 
-    fun getCellByCoordinate(coordinate: Point): Cell? {
-        return cells.firstOrNull { it.coordinate.equals(coordinate.x, coordinate.y) }
-    }
+    fun getCellByCoordinate(coordinate: Point): Cell? =
+            cells.firstOrNull { it.coordinate.equals(coordinate.x, coordinate.y) }
 
-    fun getCellIndexByCoordinate(coordinate: Point): Int {
-        //return cells.indexOfFirst { it.coordinate.equals(coordinate.x, coordinate.y) }
-        return if (-1 < coordinate.x && coordinate.x < size.x && -1 < coordinate.y && coordinate.y < size.y) coordinate.x + coordinate.y * size.x else -1
-    }
+    fun getCellIndexByCoordinate(coordinate: Point): Int = //return cells.indexOfFirst { it.coordinate.equals(coordinate.x, coordinate.y) }
+            if (-1 < coordinate.x && coordinate.x < size.x && -1 < coordinate.y && coordinate.y < size.y) coordinate.x + coordinate.y * size.x else -1
 
     fun getCellsInColumn(index: Int): List<Cell>? {
         if (index < 0 || size.x < index) return null
         val cellsInRow: ArrayList<Cell> = ArrayList()
-        for (i in 0..size.y - 1) {
+        for (i in 0 until size.y) {
             val cell = getCellByCoordinate(Point(index, i)) ?: return null
             cellsInRow.add(cell)
         }
@@ -299,7 +289,7 @@ open class CanvasUtil(val size: Point) {
     fun getCellsInRow(index: Int): List<Cell>? {
         if (index < 0 || size.y < index) return null
         val cellsInColumn: ArrayList<Cell> = ArrayList()
-        for (i in 0..size.x - 1) {
+        for (i in 0 until size.x) {
             val cell = getCellByCoordinate(Point(i, index)) ?: return null
             cellsInColumn.add(cell)
         }

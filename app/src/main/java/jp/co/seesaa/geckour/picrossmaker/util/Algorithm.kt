@@ -16,19 +16,19 @@ class Algorithm(size: Point): CanvasUtil(size) {
         solver.reset()
         KeyStates.varCount = size.x * size.y
 
-        val keysHorizontal: ArrayList<List<Int>> = (0..size.y - 1)
+        val keysHorizontal: ArrayList<List<Int>> = (0 until size.y)
                 .mapTo(ArrayList()) {
                     val cellsInRow = getCellsInRow(it) ?: return false
                     getKeys(cellsInRow).filter { it > 0 }
                 }
-        val keysVertical: ArrayList<List<Int>> = (0..size.x - 1)
+        val keysVertical: ArrayList<List<Int>> = (0 until size.x)
                 .mapTo(ArrayList()) {
                     val cellsInColumn = getCellsInColumn(it) ?: return false
                     getKeys(cellsInColumn).filter { it > 0 }
                 }
 
         // row
-        for (i in 0..size.y - 1) {
+        for (i in 0 until size.y) {
             val keyStatesRow = KeyStates(size.x, keysHorizontal[i])
 
             if (!tseytinEncode1(keyStatesRow)) return false
@@ -37,7 +37,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
         }
 
         // column
-        for (i in 0..size.x - 1) {
+        for (i in 0 until size.x) {
             val keyStatesColumn = KeyStates(size.y, keysVertical[i])
 
             if (!tseytinEncode1(keyStatesColumn)) return false
@@ -50,8 +50,8 @@ class Algorithm(size: Point): CanvasUtil(size) {
         return isSolvable
     }
 
-    fun tseytinEncode1(keyStates: KeyStates): Boolean {
-        for (i in 0..keyStates.keys.size - 1) {
+    private fun tseytinEncode1(keyStates: KeyStates): Boolean {
+        for (i in 0 until keyStates.keys.size) {
             val v = VecInt()
 
             for (j in 0..keyStates.slideMargin) {
@@ -62,7 +62,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
         }
 
         for (i in 0..keyStates.slideMargin) {
-            for (j in 0..keyStates.keys.size - 1) {
+            for (j in 0 until keyStates.keys.size) {
                 for (k in i + 1..keyStates.slideMargin) {
                     val v = VecInt()
                     v.push(-(keyStates.getCnfVar(j, k) ?: return false))
@@ -76,7 +76,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
         return true
     }
 
-    fun tseytinEncode2(keyStates: KeyStates): Boolean {
+    private fun tseytinEncode2(keyStates: KeyStates): Boolean {
         for (i in 0..keyStates.keys.size - 2) {
             for (j in 0..keyStates.slideMargin) {
                 val v = VecInt()
@@ -93,15 +93,15 @@ class Algorithm(size: Point): CanvasUtil(size) {
         return true
     }
 
-    fun tseytinEncode3(keyStates: KeyStates, index: Int, isRow: Boolean): Boolean {
-        for (i in 0..keyStates.lineSize - 1) {
+    private fun tseytinEncode3(keyStates: KeyStates, index: Int, isRow: Boolean): Boolean {
+        for (i in 0 until keyStates.lineSize) {
             val coordinate = if (isRow) Point(i, index) else Point(index, i)
             val cellIndex = getCellIndexByCoordinate(coordinate) + 1
             if (cellIndex < 1) return false
 
             for ((j, key) in keyStates.keys.withIndex()) {
                 for (k in 0..keyStates.slideMargin) {
-                    (0..key - 1)
+                    (0 until key)
                             .filter { i == (keyStates.getPreKeysSum(j) ?: return false) + j + k + it }
                             .forEach {
                                 val v = VecInt()
@@ -113,14 +113,14 @@ class Algorithm(size: Point): CanvasUtil(size) {
             }
         }
 
-        for (i in 0..keyStates.lineSize - 1) {
+        for (i in 0 until keyStates.lineSize) {
             val coordinate = if (isRow) Point(i, index) else Point(index, i)
             val cellIndex = getCellIndexByCoordinate(coordinate) + 1
             if (cellIndex < 1) return false
 
             for ((j, key) in keyStates.keys.withIndex()) {
                 for (k in 0..keyStates.slideMargin) {
-                    for (l in 0..key - 1) {
+                    for (l in 0 until key) {
                         if (i == (keyStates.getPreKeysSum(j) ?: return false) + j + k + l) {
                             val v = VecInt()
                             v.push(cellIndex)

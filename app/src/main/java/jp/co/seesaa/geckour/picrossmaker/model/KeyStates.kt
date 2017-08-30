@@ -1,6 +1,5 @@
 package jp.co.seesaa.geckour.picrossmaker.model
 
-import android.util.Log
 import java.util.*
 
 class KeyStates(val lineSize: Int, val keys: List<Int>) {
@@ -21,7 +20,7 @@ class KeyStates(val lineSize: Int, val keys: List<Int>) {
 
         this.slideMargin = this.lineSize - keysSum - this.keys.size + 1
 
-        (0..(this.slideMargin + 1) * this.keys.size - 1).forEach {
+        (0 until (this.slideMargin + 1) * this.keys.size).forEach {
             this.cnfVars.add(++varCount)
         }
     }
@@ -31,7 +30,6 @@ class KeyStates(val lineSize: Int, val keys: List<Int>) {
         return if (-1 < index && index < cnfVars.size) cnfVars[index] else null
     }
 
-    fun getPreKeysSum(keyIndex: Int): Int? {
-        return if (-1 < keyIndex && keyIndex < preKeysSumList.size) preKeysSumList[keyIndex] else null
-    }
+    fun getPreKeysSum(keyIndex: Int): Int? =
+            if (-1 < keyIndex && keyIndex < preKeysSumList.size) preKeysSumList[keyIndex] else null
 }

@@ -2,18 +2,15 @@ package jp.co.seesaa.geckour.picrossmaker.fragment
 
 import android.databinding.DataBindingUtil
 import android.os.Bundle
-import android.support.design.widget.FloatingActionButton
-import android.support.design.widget.NavigationView
-import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
 import android.util.Log
-import android.util.Size
 import android.view.*
-import com.trello.rxlifecycle2.components.support.RxFragment
+import com.trello.rxlifecycle2.components.RxFragment
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
+import jp.co.seesaa.geckour.picrossmaker.Constant
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentProblemsBinding
@@ -23,23 +20,20 @@ import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
 
 class DraftProblemsFragment: RxFragment() {
+
     lateinit private var binding: FragmentProblemsBinding
     lateinit private var adapter: DraftProblemsListAdapter
 
     companion object {
-        fun newInstance(): DraftProblemsFragment {
-            val fragment = DraftProblemsFragment()
-            return fragment
-        }
+        fun newInstance(): DraftProblemsFragment = DraftProblemsFragment()
     }
 
     override fun onResume() {
         super.onResume()
 
-        (activity as MainActivity).supportActionBar?.setTitle(R.string.action_bar_title_draft)
+        (activity as MainActivity).actionBar?.setTitle(R.string.action_bar_title_draft)
 
-        val fab = activity.findViewById(R.id.fab) as FloatingActionButton
-        fab.visibility = View.VISIBLE
+        (activity as MainActivity).binding.appBarMain.fab.visibility = View.VISIBLE
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,20 +53,20 @@ class DraftProblemsFragment: RxFragment() {
         adapter = getAdapter()
         fetchDraftProblems()
 
-        val fab = activity.findViewById(R.id.fab) as FloatingActionButton
-        fab.setImageResource(R.drawable.ic_add_white_24px)
-        fab.setOnClickListener {
-            view ->
-            run {
-                val fragment = MyAlertDialogFragment.Builder((activity as MainActivity).createAlertDialogListenerForEditor(), this)
-                        .setTitle(getString(R.string.dialog_alert_title_size_define))
-                        .setLayout(R.layout.dialog_define_size)
-                        .setRequestCode(MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE)
-                        .setCancelable(true)
-                        .commit()
-                fragment.show((activity as MainActivity).supportFragmentManager, MyAlertDialogFragment.Builder.TAG_DEFINE_SIZE)
-            }
-        }
+        (activity as MainActivity).binding.appBarMain.fab
+                .apply {
+                    setImageResource(R.drawable.ic_add_white_24px)
+                    setOnClickListener {
+                        val requestCode = MyAlertDialogFragment.RequestCode.DEFINE_SIZE
+                        val fragment = MyAlertDialogFragment.newInstance(
+                                title = getString(R.string.dialog_alert_title_size_define),
+                                resId = R.layout.dialog_define_size,
+                                requestCode = requestCode,
+                                cancelable = true
+                        )
+                        fragment.show((activity as MainActivity).fragmentManager, MyAlertDialogFragment.getTag(requestCode))
+                    }
+                }
 
         binding.recyclerView.layoutManager = LinearLayoutManager(activity)
         binding.recyclerView.adapter = adapter
@@ -89,8 +83,7 @@ class DraftProblemsFragment: RxFragment() {
 
         binding.textIndicateEmpty.setText(R.string.problem_fragment_message_empty_draft)
 
-        val nav = activity.findViewById(R.id.nav_view) as NavigationView
-        nav.menu.findItem(R.id.nav_draft).isChecked = true
+        (activity as MainActivity).binding.navView.menu.findItem(R.id.nav_draft).isChecked = true
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -111,44 +104,36 @@ class DraftProblemsFragment: RxFragment() {
         return super.onOptionsItemSelected(item)
     }
 
-    fun getAdapter(): DraftProblemsListAdapter {
-        return DraftProblemsListAdapter(object: DraftProblemsListAdapter.IListener {
-            override fun onClickDraftProblemItem(position: Int) {
-                val id = adapter.getDraftProblemByIndex(position)?.id
-                Log.d("onClickDraftProblemItem", "id: $id")
-                if (id != null) {
-                    val fragment = EditorFragment.newInstance(id,
-                            R.string.fragment_argument_draft_id.toString(),
-                            object: EditorFragment.IListener {
-                                override fun onCanvasSizeError(size: Size) {
-                                    showSnackbar(activity.findViewById(R.id.container),
-                                            R.string.problem_fragment_error_invalid_size)
-                                }
-                            })
-                    if (fragment != null) {
-                        fragmentManager.beginTransaction()
-                                .replace(R.id.container, fragment)
-                                .addToBackStack(null)
-                                .commit()
+    private fun getAdapter(): DraftProblemsListAdapter {
+        return DraftProblemsListAdapter(
+                object: DraftProblemsListAdapter.IListener {
+                    override fun onClickDraftProblemItem(position: Int) {
+                        val id = adapter.getDraftProblemByIndex(position)?.id
+                        Log.d("onClickDraftProblemItem", "id: $id")
+                        if (id != null) {
+                            val fragment = EditorFragment.newInstance(id, Constant.ARGS_FRAGMENT_DRAFT_ID)
+                            if (fragment != null) {
+                                fragmentManager.beginTransaction()
+                                        .replace(R.id.container, fragment)
+                                        .addToBackStack(null)
+                                        .commit()
+                            }
+                        }
                     }
-                }
-            }
 
-            override fun onLongClickDraftProblemItem(position: Int): Boolean {
-                return true
-            }
+                    override fun onLongClickDraftProblemItem(position: Int): Boolean = true
 
-            override fun onBind() {
-                binding.textIndicateEmpty.visibility = View.GONE
-            }
+                    override fun onBind() {
+                        binding.textIndicateEmpty.visibility = View.GONE
+                    }
 
-            override fun onAllUnbind() {
-                binding.textIndicateEmpty.visibility = View.VISIBLE
-            }
-        })
+                    override fun onAllUnbind() {
+                        binding.textIndicateEmpty.visibility = View.VISIBLE
+                    }
+                })
     }
 
-    fun getItemTouchHelper(): ItemTouchHelper {
+    private fun getItemTouchHelper(): ItemTouchHelper {
         return ItemTouchHelper(object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
             override fun onMove(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?, target: RecyclerView.ViewHolder?): Boolean = false
 
@@ -181,7 +166,7 @@ class DraftProblemsFragment: RxFragment() {
         })
     }
 
-    fun fetchDraftProblems() {
+    private fun fetchDraftProblems() {
         adapter.clearDraftProblems()
         val draftProblems = OrmaProvider.db.selectFromDraftProblem().orderBy("editedAt").toList()
         adapter.addDraftProblems(draftProblems)

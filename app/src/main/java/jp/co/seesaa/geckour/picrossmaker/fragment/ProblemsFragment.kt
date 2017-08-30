@@ -2,17 +2,14 @@ package jp.co.seesaa.geckour.picrossmaker.fragment
 
 import android.databinding.DataBindingUtil
 import android.os.Bundle
-import android.support.design.widget.FloatingActionButton
-import android.support.design.widget.NavigationView
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
-import android.util.Log
-import android.util.Size
 import android.view.*
-import com.trello.rxlifecycle2.components.support.RxFragment
+import com.trello.rxlifecycle2.components.RxFragment
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
+import jp.co.seesaa.geckour.picrossmaker.Constant
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentProblemsBinding
@@ -20,26 +17,22 @@ import jp.co.seesaa.geckour.picrossmaker.fragment.adapter.ProblemsListAdapter
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
-import timber.log.Timber
 
 class ProblemsFragment: RxFragment() {
+
     lateinit private var binding: FragmentProblemsBinding
     lateinit private var adapter: ProblemsListAdapter
 
     companion object {
-        fun newInstance(): ProblemsFragment {
-            val fragment = ProblemsFragment()
-            return fragment
-        }
+        fun newInstance(): ProblemsFragment = ProblemsFragment()
     }
 
     override fun onResume() {
         super.onResume()
 
-        (activity as MainActivity).supportActionBar?.setTitle(R.string.app_name)
+        (activity as MainActivity).actionBar?.setTitle(R.string.app_name)
 
-        val fab = activity.findViewById(R.id.fab) as FloatingActionButton
-        fab.visibility = View.VISIBLE
+        (activity as MainActivity).binding.appBarMain.fab.visibility = View.VISIBLE
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,19 +52,23 @@ class ProblemsFragment: RxFragment() {
         adapter = getAdapter()
         fetchProblems()
 
-        val fab = activity.findViewById(R.id.fab) as FloatingActionButton
-        fab.setImageResource(R.drawable.ic_add_white_24px)
-        fab.setOnClickListener {
-            run {
-                val fragment = MyAlertDialogFragment.Builder((activity as MainActivity).createAlertDialogListenerForEditor(), this)
-                        .setTitle(getString(R.string.dialog_alert_title_size_define))
-                        .setLayout(R.layout.dialog_define_size)
-                        .setRequestCode(MyAlertDialogFragment.Builder.REQUEST_CODE_DEFINE_SIZE)
-                        .setCancelable(true)
-                        .commit()
-                fragment.show((activity as MainActivity).supportFragmentManager, MyAlertDialogFragment.Builder.TAG_DEFINE_SIZE)
-            }
-        }
+        (activity as MainActivity).binding.appBarMain.fab
+                .apply {
+                    setImageResource(R.drawable.ic_add_white_24px)
+                    setOnClickListener {
+                        run {
+                            val requestCode = MyAlertDialogFragment.RequestCode.DEFINE_SIZE
+                            val fragment = MyAlertDialogFragment.newInstance(
+                                    title = getString(R.string.dialog_alert_title_size_define),
+                                    resId = R.layout.dialog_define_size,
+                                    requestCode = requestCode,
+                                    cancelable = true
+                            )
+                            fragment.show((activity as MainActivity).fragmentManager, MyAlertDialogFragment.getTag(requestCode))
+                        }
+                    }
+                }
+
 
         binding.recyclerView.layoutManager = LinearLayoutManager(activity)
         binding.recyclerView.adapter = adapter
@@ -88,8 +85,7 @@ class ProblemsFragment: RxFragment() {
 
         binding.textIndicateEmpty.setText(R.string.problem_fragment_message_empty)
 
-        val nav = activity.findViewById(R.id.nav_view) as NavigationView
-        nav.menu.findItem(R.id.nav_problem).isChecked = true
+        (activity as MainActivity).binding.navView.menu.findItem(R.id.nav_problem).isChecked = true
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -110,19 +106,12 @@ class ProblemsFragment: RxFragment() {
         return super.onOptionsItemSelected(item)
     }
 
-    fun getAdapter(): ProblemsListAdapter {
+    private fun getAdapter(): ProblemsListAdapter {
         return ProblemsListAdapter(object: ProblemsListAdapter.IListener {
             override fun onClickProblemItem(position: Int) {
                 val id = adapter.getProblemByIndex(position)?.id
                 if (id != null) {
-                    val fragment = EditorFragment.newInstance(id,
-                            R.string.fragment_argument_problem_id.toString(),
-                            object: EditorFragment.IListener {
-                                override fun onCanvasSizeError(size: Size) {
-                                    showSnackbar(activity.findViewById(R.id.container),
-                                            R.string.problem_fragment_error_invalid_size)
-                                }
-                            })
+                    val fragment = EditorFragment.newInstance(id, Constant.ARGS_FRAGMENT_PROBLEM_ID)
                     if (fragment != null) {
                         fragmentManager.beginTransaction()
                                 .replace(R.id.container, fragment)
@@ -132,9 +121,7 @@ class ProblemsFragment: RxFragment() {
                 }
             }
 
-            override fun onLongClickProblemItem(position: Int): Boolean {
-                return true
-            }
+            override fun onLongClickProblemItem(position: Int): Boolean = true
 
             override fun onBind() {
                 binding.textIndicateEmpty.visibility = View.GONE
@@ -146,7 +133,7 @@ class ProblemsFragment: RxFragment() {
         })
     }
 
-    fun getItemTouchHelper(): ItemTouchHelper {
+    private fun getItemTouchHelper(): ItemTouchHelper {
         return ItemTouchHelper(object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
             override fun onMove(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?, target: RecyclerView.ViewHolder?): Boolean = false
 
@@ -181,7 +168,7 @@ class ProblemsFragment: RxFragment() {
         })
     }
 
-    fun fetchProblems() {
+    private fun fetchProblems() {
         adapter.clearProblems()
         val problems = OrmaProvider.db.selectFromProblem().orderBy("editedAt").toList()
         adapter.addProblems(problems)

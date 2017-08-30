@@ -27,9 +27,8 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
         onChangeProblems()
     }
 
-    fun getProblemByIndex(position: Int): Problem? {
-        return if (-1 < position && position < problems.size) problems[position] else null
-    }
+    fun getProblemByIndex(position: Int): Problem? =
+            if (-1 < position && position < problems.size) problems[position] else null
 
     fun removeProblemsByIndex(vararg positions: Int) {
         positions.forEach {
@@ -48,16 +47,15 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
         onChangeProblems()
     }
 
-    fun onChangeProblems() {
+    private fun onChangeProblems() {
         if (problems.size > 0) listener.onBind()
         else listener.onAllUnbind()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent?.context).inflate(R.layout.item_problem, parent, false)
-        val holder = ViewHolder(view)
+        val binding: ItemProblemBinding = DataBindingUtil.inflate(LayoutInflater.from(parent?.context), R.layout.item_problem, parent, false)
 
-        return holder
+        return ViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -69,12 +67,9 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
         holder.itemView.setOnLongClickListener { listener.onLongClickProblemItem(pos) }
     }
 
-    override fun getItemCount(): Int {
-        return problems.size
-    }
+    override fun getItemCount(): Int = problems.size
 
-    class ViewHolder(view: View): RecyclerView.ViewHolder(view) {
-        val binding: ItemProblemBinding = DataBindingUtil.bind(view)
+    class ViewHolder(private val binding: ItemProblemBinding): RecyclerView.ViewHolder(binding.root) {
 
         fun bindData(problem: Problem) {
             binding.thumb.setImageBitmap(problem.thumb)

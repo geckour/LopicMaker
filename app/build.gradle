@@ -1,14 +1,19 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 
+androidExtensions {
+    experimental = true
+}
+
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    compileSdkVersion 26
+    buildToolsVersion "26.0.1"
     defaultConfig {
         applicationId "jp.co.seesaa.geckour.picrossmaker"
-        minSdkVersion 21
-        targetSdkVersion 25
+        minSdkVersion 24
+        targetSdkVersion 26
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -35,7 +40,7 @@ android {
 }
 
 dependencies {
-    ext.android_support_version = '25.3.1'
+    ext.android_support_version = '26.0.0-alpha1'
     ext.orma_version = '4.2.3'
     ext.rxLifecycle_version = '2.0.1'
 

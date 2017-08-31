@@ -16,37 +16,38 @@ class Algorithm(size: Point): CanvasUtil(size) {
         solver.reset()
         KeyStates.varCount = size.x * size.y
 
-        val keysHorizontal: ArrayList<List<Int>> = (0 until size.y)
+        val keysHorizontal: List<List<Int>> = (0 until size.y)
                 .mapTo(ArrayList()) {
                     val cellsInRow = getCellsInRow(it) ?: return false
-                    getKeys(cellsInRow).filter { it > 0 }
+                    getKeys(cellsInRow)
                 }
-        val keysVertical: ArrayList<List<Int>> = (0 until size.x)
+        val keysVertical: List<List<Int>> = (0 until size.x)
                 .mapTo(ArrayList()) {
                     val cellsInColumn = getCellsInColumn(it) ?: return false
-                    getKeys(cellsInColumn).filter { it > 0 }
+                    getKeys(cellsInColumn)
                 }
 
         // row
-        for (i in 0 until size.y) {
-            val keyStatesRow = KeyStates(size.x, keysHorizontal[i])
+        (0 until size.y).forEach {
+            val keyStatesRow = KeyStates(size.x, keysHorizontal[it])
 
             if (!tseytinEncode1(keyStatesRow)) return false
             if (!tseytinEncode2(keyStatesRow)) return false
-            if (!tseytinEncode3(keyStatesRow, i, true)) return false
+            if (!tseytinEncode3(keyStatesRow, it, true)) return false
         }
 
         // column
-        for (i in 0 until size.x) {
-            val keyStatesColumn = KeyStates(size.y, keysVertical[i])
+        (0 until size.x).forEach {
+            val keyStatesColumn = KeyStates(size.y, keysVertical[it])
 
             if (!tseytinEncode1(keyStatesColumn)) return false
             if (!tseytinEncode2(keyStatesColumn)) return false
-            if (!tseytinEncode3(keyStatesColumn, i, false)) return false
+            if (!tseytinEncode3(keyStatesColumn, it, false)) return false
         }
 
         val isSolvable = (solver as IProblem).isSatisfiable
-        Log.d("isSolvable", "$isSolvable")
+        Log.d("isSolvable", "solvable: $isSolvable")
+        if (isSolvable) Log.d("isSolvable", "solution: ${getSolutionString(solver.model())}")
         return isSolvable
     }
 
@@ -82,8 +83,8 @@ class Algorithm(size: Point): CanvasUtil(size) {
                 val v = VecInt()
                 v.push(-(keyStates.getCnfVar(i, j) ?: return false))
 
-                (j..keyStates.slideMargin).forEach {
-                    v.push(keyStates.getCnfVar(i + 1, it) ?: return false)
+                for (k in j..keyStates.slideMargin) {
+                    v.push(keyStates.getCnfVar(i + 1, k) ?: return false)
                 }
 
                 solver.addClause(v)
@@ -96,8 +97,8 @@ class Algorithm(size: Point): CanvasUtil(size) {
     private fun tseytinEncode3(keyStates: KeyStates, index: Int, isRow: Boolean): Boolean {
         for (i in 0 until keyStates.lineSize) {
             val coordinate = if (isRow) Point(i, index) else Point(index, i)
-            val cellIndex = getCellIndexByCoordinate(coordinate) + 1
-            if (cellIndex < 1) return false
+            val cellIndex = getCellIndexByCoordinate(coordinate)
+            if (cellIndex < 0) return false
 
             for ((j, key) in keyStates.keys.withIndex()) {
                 for (k in 0..keyStates.slideMargin) {
@@ -115,8 +116,8 @@ class Algorithm(size: Point): CanvasUtil(size) {
 
         for (i in 0 until keyStates.lineSize) {
             val coordinate = if (isRow) Point(i, index) else Point(index, i)
-            val cellIndex = getCellIndexByCoordinate(coordinate) + 1
-            if (cellIndex < 1) return false
+            val cellIndex = getCellIndexByCoordinate(coordinate)
+            if (cellIndex < 0) return false
 
             for ((j, key) in keyStates.keys.withIndex()) {
                 for (k in 0..keyStates.slideMargin) {
@@ -134,5 +135,17 @@ class Algorithm(size: Point): CanvasUtil(size) {
         }
 
         return true
+    }
+
+    private fun getSolutionString(model: IntArray): String {
+        val lastIndex = model.lastIndex
+        var solution = "\n"
+        for (i in 0 until size.x * size.y) {
+            if (i > lastIndex) break
+            solution += if (model[i] > 0) "■ " else "× "
+            if ((i + 1).rem(size.x) == 0) solution += "\n"
+        }
+
+        return solution
     }
 }

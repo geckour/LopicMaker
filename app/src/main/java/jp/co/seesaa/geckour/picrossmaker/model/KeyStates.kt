@@ -1,35 +1,27 @@
 package jp.co.seesaa.geckour.picrossmaker.model
 
-import java.util.*
+import kotlin.collections.ArrayList
 
 class KeyStates(val lineSize: Int, val keys: List<Int>) {
     companion object {
         var varCount = 0
     }
 
-    val slideMargin: Int
-    private val preKeysSumList: ArrayList<Int> = ArrayList()
-    private val cnfVars: ArrayList<Int> = ArrayList()
+    private val preKeysSumList: List<Int> = keys.mapIndexed { index, _ -> keys.subList(0, index).sum() }
+    private val cnfVars: List<Int>
+    val slideMargin: Int = this.lineSize - keys.sum() - this.keys.size + 1
 
     init {
-        var keysSum = 0
-        for (key in keys) {
-            this.preKeysSumList.add(keysSum)
-            keysSum += key
-        }
-
-        this.slideMargin = this.lineSize - keysSum - this.keys.size + 1
-
-        (0 until (this.slideMargin + 1) * this.keys.size).forEach {
-            this.cnfVars.add(++varCount)
-        }
+        cnfVars = (0 until (this.slideMargin + 1) * this.keys.size)
+                .mapTo(ArrayList()) {
+                    ++varCount
+                }
     }
 
     fun getCnfVar(keyIndex: Int, slideIndex: Int): Int? {
         val index = keyIndex * (slideMargin + 1) + slideIndex
-        return if (-1 < index && index < cnfVars.size) cnfVars[index] else null
+        return cnfVars.getOrNull(index)
     }
 
-    fun getPreKeysSum(keyIndex: Int): Int? =
-            if (-1 < keyIndex && keyIndex < preKeysSumList.size) preKeysSumList[keyIndex] else null
+    fun getPreKeysSum(keyIndex: Int): Int? = preKeysSumList.getOrNull(keyIndex)
 }

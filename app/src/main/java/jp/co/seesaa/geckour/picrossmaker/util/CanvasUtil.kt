@@ -254,7 +254,7 @@ open class CanvasUtil(val size: Point) {
     fun getKeys(cells: List<Cell>): List<Int> {
         val keys: ArrayList<Int> = arrayListOf(0)
         cells.forEachIndexed { i, cell ->
-            if (cells.getOrNull(i - 2)?.getState() == true && cells.getOrNull(i - 1)?.getState()?.not() == true && cell.getState()) keys.add(0) // □→■になった時にキー追加
+            if ((keys.size > 1 || keys.last() != 0) && cells.getOrNull(i - 1)?.getState() != true && cell.getState()) keys.add(0) // □→■になった時にキー追加
             if (cell.getState()) {
                 keys[keys.lastIndex] += 1
             }

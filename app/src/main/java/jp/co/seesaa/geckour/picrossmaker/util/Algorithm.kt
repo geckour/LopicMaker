@@ -31,18 +31,18 @@ class Algorithm(size: Point): CanvasUtil(size) {
         (0 until size.y).forEach {
             val keyStatesRow = KeyStates(size.x, keysHorizontal[it])
 
-            if (!tseytinEncode1(keyStatesRow)) return false
-            if (!tseytinEncode2(keyStatesRow)) return false
-            if (!tseytinEncode3(keyStatesRow, it, true)) return false
+            if (tseytinEncode1(keyStatesRow).not()) return false
+            if (tseytinEncode2(keyStatesRow).not()) return false
+            if (tseytinEncode3(keyStatesRow, it, true).not()) return false
         }
 
         // column
         (0 until size.x).forEach {
             val keyStatesColumn = KeyStates(size.y, keysVertical[it])
 
-            if (!tseytinEncode1(keyStatesColumn)) return false
-            if (!tseytinEncode2(keyStatesColumn)) return false
-            if (!tseytinEncode3(keyStatesColumn, it, false)) return false
+            if (tseytinEncode1(keyStatesColumn).not()) return false
+            if (tseytinEncode2(keyStatesColumn).not()) return false
+            if (tseytinEncode3(keyStatesColumn, it, false).not()) return false
         }
 
         val isSolvable = (solver as IProblem).isSatisfiable
@@ -52,7 +52,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
     }
 
     private fun tseytinEncode1(keyStates: KeyStates): Boolean {
-        for (i in 0 until keyStates.keys.size) {
+        for (i in 0..keyStates.keys.lastIndex) {
             val v = VecInt()
 
             for (j in 0..keyStates.slideMargin) {
@@ -63,7 +63,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
         }
 
         for (i in 0..keyStates.slideMargin) {
-            for (j in 0 until keyStates.keys.size) {
+            for (j in 0..keyStates.keys.lastIndex) {
                 for (k in i + 1..keyStates.slideMargin) {
                     val v = VecInt()
                     v.push(-(keyStates.getCnfVar(j, k) ?: return false))
@@ -78,7 +78,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
     }
 
     private fun tseytinEncode2(keyStates: KeyStates): Boolean {
-        for (i in 0..keyStates.keys.size - 2) {
+        for (i in 0 until keyStates.keys.lastIndex) {
             for (j in 0..keyStates.slideMargin) {
                 val v = VecInt()
                 v.push(-(keyStates.getCnfVar(i, j) ?: return false))
@@ -100,18 +100,19 @@ class Algorithm(size: Point): CanvasUtil(size) {
             val cellIndex = getCellIndexByCoordinate(coordinate)
             if (cellIndex < 0) return false
 
+            val v = VecInt()
+            v.push(-cellIndex)
             for ((j, key) in keyStates.keys.withIndex()) {
                 for (k in 0..keyStates.slideMargin) {
                     (0 until key)
                             .filter { i == (keyStates.getPreKeysSum(j) ?: return false) + j + k + it }
                             .forEach {
-                                val v = VecInt()
-                                v.push(-cellIndex)
                                 v.push(keyStates.getCnfVar(j, k) ?: return false)
-                                solver.addClause(v)
                             }
                 }
             }
+
+            solver.addClause(v)
         }
 
         for (i in 0 until keyStates.lineSize) {
@@ -121,16 +122,16 @@ class Algorithm(size: Point): CanvasUtil(size) {
 
             for ((j, key) in keyStates.keys.withIndex()) {
                 for (k in 0..keyStates.slideMargin) {
-                    for (l in 0 until key) {
-                        if (i == (keyStates.getPreKeysSum(j) ?: return false) + j + k + l) {
-                            val v = VecInt()
-                            v.push(cellIndex)
-                            v.push(-(keyStates.getCnfVar(j, k) ?: return false))
+                    (0 until key)
+                            .filter { i == (keyStates.getPreKeysSum(j) ?: return false) + j + k + it }
+                            .forEach {
+                                val v = VecInt()
+                                v.push(cellIndex)
+                                v.push(-(keyStates.getCnfVar(j, k) ?: return false))
 
-                            solver.addClause(v)
-                        }
+                                solver.addClause(v)
+                            }
                     }
-                }
             }
         }
 

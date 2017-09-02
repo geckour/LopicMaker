@@ -1,29 +1,41 @@
 package jp.co.seesaa.geckour.picrossmaker.util
 
 import android.graphics.Point
-import android.util.Log
 import jp.co.seesaa.geckour.picrossmaker.model.KeyStates
 import org.sat4j.core.VecInt
 import org.sat4j.minisat.SolverFactory
-import org.sat4j.specs.IProblem
+import org.sat4j.specs.ISolver
 import java.util.*
 
 class Algorithm(size: Point): CanvasUtil(size) {
-    private val solver = SolverFactory.newDefault()
 
-    // FIXME
-    fun isSolvable(): Boolean {
+    enum class SatisfactionState {
+        Satisfiable,
+        ExistMultipleSolution,
+        Unsatisfiable
+    }
+
+    private val solver: ISolver = SolverFactory.newDefault().apply { timeoutMs = 500 }
+
+    fun getSatisfactionState(solutionCount: Long) =
+            when {
+                solutionCount == 1L -> SatisfactionState.Satisfiable
+                solutionCount > 1L -> SatisfactionState.ExistMultipleSolution
+                else -> SatisfactionState.Unsatisfiable
+            }
+
+    fun getSolutionCounter(): UniqueSolutionCounter? {
         solver.reset()
         KeyStates.varCount = size.x * size.y
 
         val keysHorizontal: List<List<Int>> = (0 until size.y)
                 .mapTo(ArrayList()) {
-                    val cellsInRow = getCellsInRow(it) ?: return false
+                    val cellsInRow = getCellsInRow(it) ?: return null
                     getKeys(cellsInRow)
                 }
         val keysVertical: List<List<Int>> = (0 until size.x)
                 .mapTo(ArrayList()) {
-                    val cellsInColumn = getCellsInColumn(it) ?: return false
+                    val cellsInColumn = getCellsInColumn(it) ?: return null
                     getKeys(cellsInColumn)
                 }
 
@@ -31,24 +43,21 @@ class Algorithm(size: Point): CanvasUtil(size) {
         (0 until size.y).forEach {
             val keyStatesRow = KeyStates(size.x, keysHorizontal[it])
 
-            if (tseytinEncode1(keyStatesRow).not()) return false
-            if (tseytinEncode2(keyStatesRow).not()) return false
-            if (tseytinEncode3(keyStatesRow, it, true).not()) return false
+            if (tseytinEncode1(keyStatesRow).not()) return null
+            if (tseytinEncode2(keyStatesRow).not()) return null
+            if (tseytinEncode3(keyStatesRow, it, true).not()) return null
         }
 
         // column
         (0 until size.x).forEach {
             val keyStatesColumn = KeyStates(size.y, keysVertical[it])
 
-            if (tseytinEncode1(keyStatesColumn).not()) return false
-            if (tseytinEncode2(keyStatesColumn).not()) return false
-            if (tseytinEncode3(keyStatesColumn, it, false).not()) return false
+            if (tseytinEncode1(keyStatesColumn).not()) return null
+            if (tseytinEncode2(keyStatesColumn).not()) return null
+            if (tseytinEncode3(keyStatesColumn, it, false).not()) return null
         }
 
-        val isSolvable = (solver as IProblem).isSatisfiable
-        Log.d("isSolvable", "solvable: $isSolvable")
-        if (isSolvable) Log.d("isSolvable", "solution: ${getSolutionString(solver.model())}")
-        return isSolvable
+        return UniqueSolutionCounter(solver, size)
     }
 
     private fun tseytinEncode1(keyStates: KeyStates): Boolean {
@@ -138,15 +147,19 @@ class Algorithm(size: Point): CanvasUtil(size) {
         return true
     }
 
-    private fun getSolutionString(model: IntArray): String {
-        val lastIndex = model.lastIndex
-        var solution = "\n"
-        for (i in 0 until size.x * size.y) {
-            if (i > lastIndex) break
-            solution += if (model[i] > 0) "■ " else "× "
-            if ((i + 1).rem(size.x) == 0) solution += "\n"
-        }
+    fun getSolutionString(): String =
+            if (solver.isSatisfiable) {
+                solver.findModel()?.let {
+                    val lastIndex = it.lastIndex
 
-        return solution
-    }
+                    StringBuilder().apply {
+                        append("\n")
+                        (0 until size.x * size.y).forEach { i ->
+                            if (i > lastIndex) return@forEach
+                            append(if (it[i] > 0) "■ " else "× ")
+                            if ((i + 1).rem(size.x) == 0) append("\n")
+                        }
+                    }.toString()
+                } ?: "There may be line of fulfilling their own"
+            } else "no solution"
 }

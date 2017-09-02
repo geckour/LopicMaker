@@ -8,14 +8,12 @@ import android.graphics.PointF
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
+import android.util.Log
 import android.util.Size
 import android.view.*
 import com.github.yamamotoj.pikkel.Pikkel
 import com.github.yamamotoj.pikkel.PikkelDelegate
 import com.trello.rxlifecycle2.components.RxFragment
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
 import jp.co.seesaa.geckour.picrossmaker.*
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentEditorBinding
@@ -28,6 +26,7 @@ import jp.co.seesaa.geckour.picrossmaker.util.CanvasUtil
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
 import kotlinx.coroutines.experimental.Job
+import org.sat4j.specs.TimeoutException
 import kotlin.collections.ArrayList
 
 class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by PikkelDelegate() {
@@ -38,7 +37,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
     lateinit private var binding: FragmentEditorBinding
     private val pointPrev0 = PointF(-1f, -1f)
     private val pointPrev1 = PointF(-1f, -1f)
-    private var isSolvable by state(true)
+    private var satisfactionState by state(Algorithm.SatisfactionState.Unsatisfiable)
     lateinit private var algorithm: Algorithm
     private val jobList: ArrayList<Job> = ArrayList()
 
@@ -275,15 +274,24 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                 pointPrev0.set(-1f, -1f)
                 pointPrev1.set(-1f, -1f)
 
-                Observable.just(algorithm.isSolvable())
-                        .subscribeOn(Schedulers.computation())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .compose(this.bindToLifecycle<Boolean>())
-                        .subscribe { b -> isSolvable = b }
+                ui(jobList) {
+                    satisfactionState = algorithm.getSolutionCounter()?.let {
+                        val count =
+                                try {
+                                    async { it.countSolutions() }.await()
+                                } catch (e: TimeoutException) {
+                                    it.lowerBound()
+                                } finally {
+                                    -1L
+                                }
+
+                        algorithm.getSatisfactionState(count)
+                    } ?: Algorithm.SatisfactionState.Unsatisfiable
+                }
             }
 
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_MOVE -> {
-                if (event.action == MotionEvent.ACTION_MOVE) isSolvable = false
+                if (event.action == MotionEvent.ACTION_MOVE) satisfactionState = Algorithm.SatisfactionState.Unsatisfiable
 
                 val pointCurrent = PointF(event.x, event.y)
                 val coordCurrent = algorithm.getCoordinateFromTouchPoint(
@@ -355,11 +363,17 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
     }
 
     private fun onSaveCanvas() {
-        val requestCode = if (isSolvable) MyAlertDialogFragment.RequestCode.SAVE_PROBLEM else MyAlertDialogFragment.RequestCode.SAVE_DRAFT_PROBLEM
+        val requestCode = if (satisfactionState == Algorithm.SatisfactionState.Satisfiable) MyAlertDialogFragment.RequestCode.SAVE_PROBLEM else MyAlertDialogFragment.RequestCode.SAVE_DRAFT_PROBLEM
         val fragment = MyAlertDialogFragment.newInstance(
                 resId = R.layout.dialog_define_title,
-                title = getString(if (isSolvable) R.string.dialog_alert_title_save_problem else R.string.dialog_alert_title_save_draft_problem),
-                message = getString(if (isSolvable) R.string.dialog_alert_message_save_problem else R.string.dialog_alert_message_save_draft_problem),
+                title = getString(if (satisfactionState == Algorithm.SatisfactionState.Satisfiable) R.string.dialog_alert_title_save_problem else R.string.dialog_alert_title_save_draft_problem),
+                message = getString(
+                        when (satisfactionState) {
+                            Algorithm.SatisfactionState.Satisfiable -> R.string.dialog_alert_message_save_problem
+                            Algorithm.SatisfactionState.ExistMultipleSolution -> R.string.dialog_alert_message_save_draft_problem_exist_multiple_solution
+                            else -> R.string.dialog_alert_message_save_draft_problem_unsatisfiable
+                        }
+                ),
                 requestCode = requestCode,
                 cancelable = true,
                 targetFragment = this

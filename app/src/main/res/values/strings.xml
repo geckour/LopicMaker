@@ -33,7 +33,8 @@
     <string name="dialog_alert_title_save_problem">保存</string>
     <string name="dialog_alert_title_save_draft_problem">下書きを保存</string>
     <string name="dialog_alert_message_save_problem">問題を保存しますか？</string>
-    <string name="dialog_alert_message_save_draft_problem">この問題は解くことができません。下書きとして保存しますか？</string>
+    <string name="dialog_alert_message_save_draft_problem_exist_multiple_solution">この問題のヒントキーからは複数の解が導かれます。下書きとして保存しますか？</string>
+    <string name="dialog_alert_message_save_draft_problem_unsatisfiable">この問題は解くことができません。下書きとして保存しますか？</string>
 
     <string name="problem_fragment_message_empty">まだ問題が作成されていません。\n右下の+ボタンから作成してください</string>
     <string name="problem_fragment_message_empty_draft">まだ下書きが作成されていません。\n右下の+ボタンから作成してください</string>

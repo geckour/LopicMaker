@@ -2,9 +2,12 @@ package jp.co.seesaa.geckour.picrossmaker.fragment
 
 import android.content.Context
 import android.content.DialogInterface
+import android.content.res.ColorStateList
 import android.databinding.DataBindingUtil
+import android.graphics.Color
 import android.graphics.Point
 import android.graphics.PointF
+import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
@@ -40,6 +43,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
     private var satisfactionState by state(Algorithm.SatisfactionState.Unsatisfiable)
     lateinit private var algorithm: Algorithm
     private val jobList: ArrayList<Job> = ArrayList()
+    private var menu: Menu? = null
 
     interface IListener {
         fun onCanvasSizeError(size: Size)
@@ -49,6 +53,11 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
         CANVAS_SIZE,
         PROBLEM_ID,
         DRAFT_ID
+    }
+
+    enum class Mode {
+        Edit,
+        Scale
     }
 
     companion object {
@@ -98,8 +107,6 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        onRefresh(savedInstanceState)
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -121,20 +128,29 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
             else -> (activity as? MainActivity)?.actionBar?.setTitle(R.string.action_bar_title_edit)
         }
 
+        onRefresh(savedInstanceState)
+
         (activity as MainActivity).binding.appBarMain.fab
                 .apply {
-                    tag = true
+                    tag = Mode.Edit
                     setImageResource(R.drawable.ic_crop_free_white_24px)
                     setOnClickListener {
-                        val mode = it.tag as Boolean
-                        (it as FloatingActionButton).setImageResource(if (mode) R.drawable.ic_edit_white_24px else R.drawable.ic_crop_free_white_24px)
-                        it.tag = !mode
+                        val mode = it.tag as Mode
+                        (it as FloatingActionButton).setImageResource(
+                                when (mode) {
+                                    Mode.Edit -> R.drawable.ic_edit_white_24px
+                                    Mode.Scale -> R.drawable.ic_crop_free_white_24px
+                                })
+                        it.tag = when (mode) {
+                            Mode.Edit -> Mode.Scale
+                            Mode.Scale -> Mode.Edit
+                        }
                     }
                 }
 
         binding.canvas.setOnTouchListener { _, event -> onTouchCanvas(event) }
         binding.cover.setOnTouchListener { _, event ->
-            return@setOnTouchListener if (!getMode()) {
+            return@setOnTouchListener if (getMode() == Mode.Scale) {
                 when (event.action) {
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                         pointPrev0.set(-1f, -1f)
@@ -176,6 +192,10 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
 
         menu?.clear()
         inflater?.inflate(R.menu.editor, menu)
+
+        this.menu = menu
+
+        refreshSaveMenuIcon()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -274,20 +294,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                 pointPrev0.set(-1f, -1f)
                 pointPrev1.set(-1f, -1f)
 
-                ui(jobList) {
-                    satisfactionState = algorithm.getSolutionCounter()?.let {
-                        val count =
-                                try {
-                                    async { it.countSolutions() }.await()
-                                } catch (e: TimeoutException) {
-                                    it.lowerBound()
-                                } finally {
-                                    -1L
-                                }
-
-                        algorithm.getSatisfactionState(count)
-                    } ?: Algorithm.SatisfactionState.Unsatisfiable
-                }
+                refreshSaveMenuIcon()
             }
 
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_MOVE -> {
@@ -323,8 +330,8 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
         return true
     }
 
-    private fun getMode(): Boolean =
-            (activity as MainActivity).binding.appBarMain.fab.tag as Boolean
+    private fun getMode(): Mode =
+            (activity as MainActivity).binding.appBarMain.fab.tag as Mode
 
     private fun onRefresh(savedInstanceState: Bundle?) {
         when {
@@ -360,6 +367,8 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                 binding.canvas.setImageBitmap(algorithm.createCanvasImage())
             }
         }
+
+        refreshSaveMenuIcon()
     }
 
     private fun onSaveCanvas() {
@@ -410,5 +419,35 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
         }
 
         return DraftProblem(-1L, title, Problem.KeysCluster(*(keysInRow.toTypedArray())), Problem.KeysCluster(*(keysInColumn.toTypedArray())), thumb, catalog = Cell.Catalog(algorithm.cells))
+    }
+
+    private fun refreshSaveMenuIcon() {
+        this.menu?.apply {
+            ui(jobList) {
+                satisfactionState = algorithm.getSolutionCounter()?.let {
+                    val count =
+                            try {
+                                async { it.countSolutions() }.await()
+                            } catch (e: TimeoutException) {
+                                it.lowerBound()
+                            } finally {
+                                -1L
+                            }
+
+                    algorithm.getSatisfactionState(count)
+                } ?: let {
+                    Log.d("refreshSaveMenuIcon", "solutionCounter is null")
+                    Algorithm.SatisfactionState.Unsatisfiable
+                }
+                findItem(R.id.action_save)?.apply {
+                    icon = activity.getDrawable(
+                            if (satisfactionState == Algorithm.SatisfactionState.Satisfiable) R.drawable.ic_save_white_24px
+                            else R.drawable.ic_bookmark_black_24px
+                    ).apply {
+                        setTint(Color.WHITE)
+                    }
+                }
+            }
+        } ?: Log.d("refreshSaveMenuIcon", "this.menu is null")
     }
 }

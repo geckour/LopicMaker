@@ -1,7 +1,6 @@
 package jp.co.seesaa.geckour.picrossmaker.util
 
 import android.graphics.Point
-import android.util.Log
 import org.sat4j.core.VecInt
 import org.sat4j.specs.ContradictionException
 import org.sat4j.specs.ISolver
@@ -25,7 +24,6 @@ class UniqueSolutionCounter(solver: ISolver, val size: Point): SolverDecorator<I
             if ((last contentEquals latest).not()) {
                 this.lowerBound++
                 latest = last.copyOf()
-                Log.d("countSolutions", getSolutionString(latest))
             }
 
             val clause = VecInt(last.size)

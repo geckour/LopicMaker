@@ -8,7 +8,8 @@ import java.util.*
 
 @Table
 data class Problem(@Setter("id") @PrimaryKey(autoincrement = true) val id: Long = -1L,
-                   @Setter("title") @Column var title: String = "no title",
+                   @Setter("title") @Column(indexed = true) var title: String = "no title",
+                   @Setter("genres") @Column val genres: List<String> = listOf(),
                    @Setter("keys_horizontal") @Column val keysHorizontal: KeysCluster = KeysCluster(),
                    @Setter("keys_vertical") @Column val keysVertical: KeysCluster = KeysCluster(),
                    @Setter("thumb") @Column @Nullable var thumb: Bitmap?,

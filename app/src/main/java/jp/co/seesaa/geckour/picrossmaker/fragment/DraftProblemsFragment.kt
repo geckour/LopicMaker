@@ -9,12 +9,12 @@ import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
-import jp.co.seesaa.geckour.picrossmaker.async
+import jp.co.seesaa.geckour.picrossmaker.util.async
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentProblemsBinding
 import jp.co.seesaa.geckour.picrossmaker.fragment.adapter.DraftProblemsListAdapter
 import jp.co.seesaa.geckour.picrossmaker.model.DraftProblem
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
-import jp.co.seesaa.geckour.picrossmaker.ui
+import jp.co.seesaa.geckour.picrossmaker.util.ui
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
 import kotlinx.coroutines.experimental.Job
@@ -22,6 +22,8 @@ import kotlinx.coroutines.experimental.Job
 class DraftProblemsFragment: RxFragment() {
 
     companion object {
+        val tag: String = DraftProblemsFragment::class.java.simpleName
+
         fun newInstance(): DraftProblemsFragment = DraftProblemsFragment()
     }
 
@@ -46,8 +48,8 @@ class DraftProblemsFragment: RxFragment() {
         adapter = getAdapter()
         fetchDraftProblems()
 
-        (activity as MainActivity).binding.appBarMain.fab
-                .apply {
+        (activity as MainActivity).binding.appBarMain?.fab
+                ?.apply {
                     setImageResource(R.drawable.ic_add_white_24px)
                     setOnClickListener {
                         val requestCode = MyAlertDialogFragment.RequestCode.DEFINE_SIZE
@@ -84,7 +86,7 @@ class DraftProblemsFragment: RxFragment() {
 
         (activity as MainActivity).actionBar?.setTitle(R.string.action_bar_title_draft)
 
-        (activity as MainActivity).binding.appBarMain.fab.visibility = View.VISIBLE
+        (activity as MainActivity).binding.appBarMain?.fab?.visibility = View.VISIBLE
     }
 
     override fun onPause() {

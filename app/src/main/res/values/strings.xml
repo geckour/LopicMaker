@@ -22,6 +22,12 @@
     <string name="nav_setting">設定</string>
     <string name="nav_other">その他</string>
     <string name="nav_share">共有</string>
+    <string name="nav_search">検索</string>
+
+    <string name="button_search">検索</string>
+
+    <string name="hint_query_title">タイトルを入力…</string>
+    <string name="hint_query_genre">ジャンルを入力…</string>
 
     <string name="dialog_alert_width_size_define">横:</string>
     <string name="dialog_alert_height_size_define">縦:</string>
@@ -29,15 +35,20 @@
     <string name="dialog_alert_title_title_define">タイトル:</string>
     <string name="dialog_alert_confirm">決定</string>
     <string name="dialog_alert_cancel">キャンセル</string>
+    <string name="dialog_alert_overwrite">上書き</string>
+    <string name="dialog_alert_rename">タイトルを変更</string>
     <string name="dialog_alert_title_size_define">キャンバスのサイズ</string>
     <string name="dialog_alert_title_save_problem">保存</string>
     <string name="dialog_alert_title_save_draft_problem">下書きを保存</string>
+    <string name="dialog_alert_title_overwrite">上書き保存</string>
     <string name="dialog_alert_message_save_problem">問題を保存しますか？</string>
     <string name="dialog_alert_message_save_draft_problem_exist_multiple_solution">この問題のヒントキーからは複数の解が導かれます。下書きとして保存しますか？</string>
     <string name="dialog_alert_message_save_draft_problem_unsatisfiable">この問題は解くことができません。下書きとして保存しますか？</string>
+    <string name="dialog_alert_message_confirm_before_save">同じタイトルの問題が存在します。上書き保存しますか？</string>
 
     <string name="problem_fragment_message_empty">まだ問題が作成されていません。\n右下の+ボタンから作成してください</string>
     <string name="problem_fragment_message_empty_draft">まだ下書きが作成されていません。\n右下の+ボタンから作成してください</string>
+    <string name="problem_fragment_message_empty_search">問題が見つかりませんでした。\n検索条件を変えて再度検索してください</string>
     <string name="problem_fragment_error_invalid_size">有効なサイズを指定してください</string>
     <string name="problem_fragment_item_point">%1$d x %2$d</string>
     <string name="problem_fragment_error_failure_delete">削除に失敗しました</string>

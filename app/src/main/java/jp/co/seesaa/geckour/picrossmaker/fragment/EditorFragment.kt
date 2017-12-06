@@ -2,12 +2,10 @@ package jp.co.seesaa.geckour.picrossmaker.fragment
 
 import android.content.Context
 import android.content.DialogInterface
-import android.content.res.ColorStateList
 import android.databinding.DataBindingUtil
 import android.graphics.Color
 import android.graphics.Point
 import android.graphics.PointF
-import android.graphics.PorterDuff
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
@@ -24,9 +22,7 @@ import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import jp.co.seesaa.geckour.picrossmaker.model.DraftProblem
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
 import jp.co.seesaa.geckour.picrossmaker.model.Problem
-import jp.co.seesaa.geckour.picrossmaker.util.Algorithm
-import jp.co.seesaa.geckour.picrossmaker.util.CanvasUtil
-import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
+import jp.co.seesaa.geckour.picrossmaker.util.*
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
 import kotlinx.coroutines.experimental.Job
 import org.sat4j.specs.TimeoutException
@@ -130,8 +126,8 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
 
         onRefresh(savedInstanceState)
 
-        (activity as MainActivity).binding.appBarMain.fab
-                .apply {
+        (activity as MainActivity).binding.appBarMain?.fab
+                ?.apply {
                     tag = Mode.Edit
                     setImageResource(R.drawable.ic_crop_free_white_24px)
                     setOnClickListener {
@@ -148,26 +144,32 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                     }
                 }
 
-        binding.canvas.setOnTouchListener { _, event -> onTouchCanvas(event) }
-        binding.cover.setOnTouchListener { _, event ->
-            return@setOnTouchListener if (getMode() == Mode.Scale) {
-                when (event.action) {
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
-                        pointPrev0.set(-1f, -1f)
-                        pointPrev1.set(-1f, -1f)
-                        true
-                    }
-
-                    else -> {
-                        val p0 = PointF(event.getX(0), event.getY(0))
-                        if (event.pointerCount > 1) {
-                            val p1 = PointF(event.getX(1), event.getY(1))
-                            onScale(p0, p1)
+        binding.canvas.apply {
+            setOnClickListener(null)
+            setOnTouchListener { _, event -> onTouchCanvas(event) }
+        }
+        binding.cover.apply {
+            setOnClickListener(null)
+            setOnTouchListener { _, event ->
+                return@setOnTouchListener if (getMode() == Mode.Scale) {
+                    when (event.action) {
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                            pointPrev0.set(-1f, -1f)
+                            pointPrev1.set(-1f, -1f)
+                            true
                         }
-                        else onDrag(p0)
+
+                        else -> {
+                            val p0 = PointF(event.getX(0), event.getY(0))
+                            if (event.pointerCount > 1) {
+                                val p1 = PointF(event.getX(1), event.getY(1))
+                                onScale(p0, p1)
+                            }
+                            else onDrag(p0)
+                        }
                     }
-                }
-            } else false
+                } else false
+            }
         }
 
         (activity as MainActivity).binding.navView.menu.findItem(R.id.nav_editor).isChecked = true
@@ -228,37 +230,78 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
             DialogInterface.BUTTON_POSITIVE -> {
                 onPositive(requestCode, result)
             }
+
+            DialogInterface.BUTTON_NEUTRAL -> {
+                onNeutral(requestCode, result)
+            }
         }
     }
 
     private fun onPositive(requestCode: MyAlertDialogFragment.RequestCode, result: Any?) {
         when (requestCode) {
+            // タイトルの重複チェック後問題を保存
             MyAlertDialogFragment.RequestCode.SAVE_PROBLEM -> {
                 (result as? String)?.let {
                     if (it.isNotEmpty()) {
                         ui(jobList, {
                             showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_failure_save)
                         }) {
-                            async { OrmaProvider.db.insertIntoProblem(createProblem(it)) }.await()
-                            showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
+                            async { OrmaProvider.db.selectFromProblem().titleEq(it).lastOrNull() }.await()?.let {
+                                onSaveCanvas(true, result as String?)
+                            } ?: run {
+                                async { OrmaProvider.db.insertIntoProblem(createProblem(it)) }.await()
+                                showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
+                            }
                         }
                     } else null
                 } ?: showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_invalid_title)
             }
 
+            // タイトルの重複チェック後下書きを保存
             MyAlertDialogFragment.RequestCode.SAVE_DRAFT_PROBLEM -> {
                 (result as? String)?.let {
                     if (it.isNotEmpty()) {
                         ui(jobList, {
                             showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_failure_save)
                         }) {
-                            async { OrmaProvider.db.insertIntoDraftProblem(createDraftProblem(it)) }.await()
+                            async { OrmaProvider.db.selectFromProblem().titleEq(it).lastOrNull() }.await()?.let {
+                                onSaveCanvas(true, result as String?)
+                            } ?: run {
+                                async { OrmaProvider.db.insertIntoDraftProblem(createDraftProblem(it)) }.await()
+                                showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
+                            }
+                        }
+                    } else null
+                } ?: showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_invalid_title)
+            }
+
+            // 上書きして問題 / 下書きを保存
+            MyAlertDialogFragment.RequestCode.CONFIRM_BEFORE_SAVE -> {
+                (result as? String)?.let {
+                    if (it.isNotEmpty()) {
+                        ui(jobList, {
+                            showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_failure_save)
+                        }) {
+                            if (satisfactionState == Algorithm.SatisfactionState.Satisfiable) {
+                                val id = async { OrmaProvider.db.selectFromProblem().titleEq(it).lastOrNull() }.await()?.id
+                                async { OrmaProvider.db.relationOfProblem().upsert(createProblem(it, id = id ?: -1L)) }.await()
+                            } else {
+                                val id = async { OrmaProvider.db.selectFromDraftProblem().titleEq(it).lastOrNull() }.await()?.id
+                                async { OrmaProvider.db.relationOfDraftProblem().upsert(createDraftProblem(it, id ?: -1L)) }.await()
+                            }
                             showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
                         }
                     } else null
                 } ?: showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_invalid_title)
             }
 
+            else -> {}
+        }
+    }
+
+    private fun onNeutral(requestCode: MyAlertDialogFragment.RequestCode, result: Any?) {
+        when (requestCode) {
+            MyAlertDialogFragment.RequestCode.CONFIRM_BEFORE_SAVE -> onSaveCanvas(optional = result as String?)
             else -> {}
         }
     }
@@ -330,8 +373,8 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
         return true
     }
 
-    private fun getMode(): Mode =
-            (activity as MainActivity).binding.appBarMain.fab.tag as Mode
+    private fun getMode(): Mode? =
+            (activity as MainActivity).binding.appBarMain?.fab?.tag as? Mode
 
     private fun onRefresh(savedInstanceState: Bundle?) {
         when {
@@ -371,16 +414,33 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
         refreshSaveMenuIcon()
     }
 
-    private fun onSaveCanvas() {
-        val requestCode = if (satisfactionState == Algorithm.SatisfactionState.Satisfiable) MyAlertDialogFragment.RequestCode.SAVE_PROBLEM else MyAlertDialogFragment.RequestCode.SAVE_DRAFT_PROBLEM
+    private fun onSaveCanvas(requireRename: Boolean = false, optional: String? = null) {
+        val requestCode = when {
+            requireRename -> MyAlertDialogFragment.RequestCode.CONFIRM_BEFORE_SAVE
+            else -> {
+                if (satisfactionState == Algorithm.SatisfactionState.Satisfiable) MyAlertDialogFragment.RequestCode.SAVE_PROBLEM
+                else MyAlertDialogFragment.RequestCode.SAVE_DRAFT_PROBLEM
+            }
+        }
         val fragment = MyAlertDialogFragment.newInstance(
-                resId = R.layout.dialog_define_title,
-                title = getString(if (satisfactionState == Algorithm.SatisfactionState.Satisfiable) R.string.dialog_alert_title_save_problem else R.string.dialog_alert_title_save_draft_problem),
+                resId = if (requireRename) null else R.layout.dialog_define_title,
+                title = getString(
+                        when {
+                            requireRename -> R.string.dialog_alert_title_overwrite
+                            else -> {
+                                if (satisfactionState == Algorithm.SatisfactionState.Satisfiable) R.string.dialog_alert_title_save_problem
+                                else R.string.dialog_alert_title_save_draft_problem
+                            }
+                        }),
+                optional = optional,
                 message = getString(
-                        when (satisfactionState) {
-                            Algorithm.SatisfactionState.Satisfiable -> R.string.dialog_alert_message_save_problem
-                            Algorithm.SatisfactionState.ExistMultipleSolution -> R.string.dialog_alert_message_save_draft_problem_exist_multiple_solution
-                            else -> R.string.dialog_alert_message_save_draft_problem_unsatisfiable
+                        if (requireRename) R.string.dialog_alert_message_confirm_before_save
+                        else {
+                            when (satisfactionState) {
+                                Algorithm.SatisfactionState.Satisfiable -> R.string.dialog_alert_message_save_problem
+                                Algorithm.SatisfactionState.ExistMultipleSolution -> R.string.dialog_alert_message_save_draft_problem_exist_multiple_solution
+                                else -> R.string.dialog_alert_message_save_draft_problem_unsatisfiable
+                            }
                         }
                 ),
                 requestCode = requestCode,
@@ -393,7 +453,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
         }
     }
 
-    private fun createProblem(title: String): Problem {
+    private fun createProblem(title: String, genres: List<String> = listOf(), id: Long = -1L): Problem {
         val thumb = algorithm.getThumbnailImage()
         val keysInRow: ArrayList<List<Int>> = ArrayList()
         (0 until algorithm.size.y).forEach {
@@ -404,10 +464,10 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
             keysInColumn.add(algorithm.getKeys(algorithm.getCellsInColumn(it) ?: return@forEach))
         }
 
-        return Problem(-1L, title, Problem.KeysCluster(*(keysInRow.toTypedArray())), Problem.KeysCluster(*(keysInColumn.toTypedArray())), thumb, catalog = Cell.Catalog(algorithm.cells))
+        return Problem(id, title, genres, Problem.KeysCluster(*(keysInRow.toTypedArray())), Problem.KeysCluster(*(keysInColumn.toTypedArray())), thumb, catalog = Cell.Catalog(algorithm.cells))
     }
 
-    private fun createDraftProblem(title: String): DraftProblem {
+    private fun createDraftProblem(title: String, id: Long = -1L): DraftProblem {
         val thumb = algorithm.getThumbnailImage()
         val keysInRow: ArrayList<List<Int>> = ArrayList()
         (0 until algorithm.size.y).forEach {
@@ -418,7 +478,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
             keysInColumn.add(algorithm.getKeys(algorithm.getCellsInColumn(it) ?: return@forEach))
         }
 
-        return DraftProblem(-1L, title, Problem.KeysCluster(*(keysInRow.toTypedArray())), Problem.KeysCluster(*(keysInColumn.toTypedArray())), thumb, catalog = Cell.Catalog(algorithm.cells))
+        return DraftProblem(id, title, Problem.KeysCluster(*(keysInRow.toTypedArray())), Problem.KeysCluster(*(keysInColumn.toTypedArray())), thumb, catalog = Cell.Catalog(algorithm.cells))
     }
 
     private fun refreshSaveMenuIcon() {

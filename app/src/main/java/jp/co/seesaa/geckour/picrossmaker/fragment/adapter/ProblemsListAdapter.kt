@@ -74,8 +74,10 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
                     .getString(R.string.problem_fragment_item_point,
                             problem.keysVertical.keys.size,
                             problem.keysHorizontal.keys.size)
-            binding.root.setOnClickListener { listener.onClickProblemItem(problem) }
-            binding.root.setOnLongClickListener { listener.onLongClickProblemItem(problem) }
+            binding.root.apply {
+                setOnClickListener { listener.onClickProblemItem(problem) }
+                setOnLongClickListener { listener.onLongClickProblemItem(problem) }
+            }
         }
     }
 

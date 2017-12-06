@@ -7,21 +7,27 @@ import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
-import jp.co.seesaa.geckour.picrossmaker.async
+import jp.co.seesaa.geckour.picrossmaker.api.ApiClient
+import jp.co.seesaa.geckour.picrossmaker.util.async
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentProblemsBinding
 import jp.co.seesaa.geckour.picrossmaker.fragment.adapter.ProblemsListAdapter
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
 import jp.co.seesaa.geckour.picrossmaker.model.Problem
-import jp.co.seesaa.geckour.picrossmaker.ui
+import jp.co.seesaa.geckour.picrossmaker.util.ui
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
+import jp.co.seesaa.geckour.picrossmaker.util.parse
 import kotlinx.coroutines.experimental.Job
 
 class ProblemsFragment: RxFragment() {
 
     companion object {
+        val tag: String = ProblemsFragment::class.java.simpleName
+
         fun newInstance(): ProblemsFragment = ProblemsFragment()
     }
 
@@ -46,8 +52,8 @@ class ProblemsFragment: RxFragment() {
         adapter = getAdapter()
         fetchProblems()
 
-        (activity as MainActivity).binding.appBarMain.fab
-                .apply {
+        (activity as MainActivity).binding.appBarMain?.fab
+                ?.apply {
                     setImageResource(R.drawable.ic_add_white_24px)
                     setOnClickListener {
                         run {
@@ -87,7 +93,7 @@ class ProblemsFragment: RxFragment() {
 
         (activity as MainActivity).actionBar?.setTitle(R.string.app_name)
 
-        (activity as MainActivity).binding.appBarMain.fab.visibility = View.VISIBLE
+        (activity as MainActivity).binding.appBarMain?.fab?.visibility = View.VISIBLE
     }
 
     override fun onPause() {
@@ -128,7 +134,16 @@ class ProblemsFragment: RxFragment() {
                     }
                 }
 
-                override fun onLongClickProblemItem(problem: Problem): Boolean = true
+                override fun onLongClickProblemItem(problem: Problem): Boolean {
+                    ApiClient().registerProblem(problem.parse())
+                            .subscribeOn(Schedulers.newThread())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .compose(bindToLifecycle())
+                            .subscribe({
+                                // TODO: 成功ダイアログ表示
+                            }, { t -> t.printStackTrace() }) // TODO: エラーダイアログ表示
+                    return true
+                }
 
                 override fun onBind() {
                     binding.textIndicateEmpty.visibility = View.GONE

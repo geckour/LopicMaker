@@ -21,12 +21,15 @@ class MyAlertDialogFragment : RxDialogFragment() {
         DEFINE_SIZE,
         SAVE_PROBLEM,
         SAVE_DRAFT_PROBLEM,
+        CONFIRM_BEFORE_SAVE,
+        RENAME_TITLE,
         UNKNOWN
     }
 
     companion object {
         private const val ARGS_TITLE = "title"
         private const val ARGS_MESSAGE = "message"
+        private const val ARGS_OPTIONAL = "optional"
         private const val ARGS_RES_ID = "resId"
         private const val ARGS_REQUEST_CODE = "requestCode"
         private const val ARGS_CANCELABLE = "cancelable"
@@ -34,6 +37,7 @@ class MyAlertDialogFragment : RxDialogFragment() {
         fun newInstance(
                 title: String = "",
                 message: String = "",
+                optional: String? = null,
                 requestCode: RequestCode? = null,
                 resId: Int? = null,
                 cancelable: Boolean = true,
@@ -43,6 +47,7 @@ class MyAlertDialogFragment : RxDialogFragment() {
                     arguments = Bundle().apply {
                         putString(ARGS_TITLE, title)
                         putString(ARGS_MESSAGE, message)
+                        optional?.let { putString(ARGS_OPTIONAL, it) }
                         requestCode?.let { putSerializable(ARGS_REQUEST_CODE, it) }
                         putInt(ARGS_RES_ID, resId ?: -1)
                         putBoolean(ARGS_CANCELABLE, cancelable)
@@ -55,6 +60,8 @@ class MyAlertDialogFragment : RxDialogFragment() {
                     RequestCode.DEFINE_SIZE -> "myAlertDialogFragmentDefineSize"
                     RequestCode.SAVE_DRAFT_PROBLEM -> "myAlertDialogFragmentSaveDraftProblem"
                     RequestCode.SAVE_PROBLEM -> "myAlertDialogFragmentSaveProblem"
+                    RequestCode.CONFIRM_BEFORE_SAVE -> "myAlertDialogFragmentConfirmBeforeSave"
+                    RequestCode.RENAME_TITLE -> "myAlertDialogFragmentRenameTitle"
                     else -> "myAlertDialogFragment"
                 }
 
@@ -64,13 +71,14 @@ class MyAlertDialogFragment : RxDialogFragment() {
                     Snackbar.LENGTH_SHORT).show()
         }
     }
-    private var sizeBinding: DialogDefineSizeBinding? = null
-    private var titleBinding: DialogDefineTitleBinding? = null
-    private var listener: IListener? = null
 
     interface IListener {
         fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: RequestCode, resultCode: Int, result: Any? = null)
     }
+
+    private var sizeBinding: DialogDefineSizeBinding? = null
+    private var titleBinding: DialogDefineTitleBinding? = null
+    private var listener: IListener? = null
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
@@ -81,28 +89,39 @@ class MyAlertDialogFragment : RxDialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         if (savedInstanceState == null) {
             isCancelable = arguments.getBoolean(ARGS_CANCELABLE)
-            val builder = AlertDialog.Builder(activity)
-                    .setTitle(arguments.getString(ARGS_TITLE))
-                    .setMessage(arguments.getString(ARGS_MESSAGE))
-                    .setNegativeButton(
-                            R.string.dialog_alert_cancel,
-                            { dialog, _ -> dialog.dismiss() })
-                    .setPositiveButton(
-                            R.string.dialog_alert_confirm,
-                            { dialog, which -> fireListener(dialog, which) })
+            val requestCode = getRequestCode()
+            val builder = AlertDialog.Builder(activity).apply {
+                setTitle(arguments.getString(ARGS_TITLE))
+                setMessage(arguments.getString(ARGS_MESSAGE))
+                setNegativeButton(
+                        R.string.dialog_alert_cancel,
+                        { dialog, _ -> dialog.dismiss() })
+                if (requestCode == RequestCode.CONFIRM_BEFORE_SAVE)
+                    setNeutralButton(
+                        R.string.dialog_alert_rename,
+                        { dialog, which -> fireListener(dialog, which) })
+                setPositiveButton(
+                        if (requestCode == RequestCode.CONFIRM_BEFORE_SAVE) R.string.dialog_alert_overwrite else R.string.dialog_alert_confirm,
+                        { dialog, which -> fireListener(dialog, which) })
+            }
 
             when (arguments.getInt(ARGS_RES_ID, -1)) {
                 R.layout.dialog_define_size -> {
                     sizeBinding = DataBindingUtil.inflate(LayoutInflater.from(activity), R.layout.dialog_define_size, null, false)
-                    sizeBinding?.let { builder.setView(it.root) }
+                    sizeBinding?.apply { builder.setView(root) }
                     return builder.create()
                 }
 
                 R.layout.dialog_define_title -> {
                     titleBinding = DataBindingUtil.inflate(LayoutInflater.from(activity), R.layout.dialog_define_title, null, false)
-                    titleBinding?.let { builder.setView(it.root) }
+                    titleBinding?.apply {
+                        builder.setView(root)
+                        getOptional()?.let { editTextProblemTitle.setText(it) }
+                    }
                     return builder.create()
                 }
+
+                -1 -> return builder.create()
             }
         }
 
@@ -110,18 +129,19 @@ class MyAlertDialogFragment : RxDialogFragment() {
     }
 
     private fun fireListener(dialogInterface: DialogInterface, which: Int) {
+        val requestCode = getRequestCode()
         listener?.onResultAlertDialog(
                 dialogInterface,
-                getRequestCode(),
+                requestCode,
                 which,
-                when (getRequestCode()) {
+                when (requestCode) {
                     RequestCode.DEFINE_SIZE -> {
                         getSize()
                     }
                     RequestCode.SAVE_DRAFT_PROBLEM, RequestCode.SAVE_PROBLEM -> {
                         getTitle()
                     }
-                    else -> null
+                    else -> getOptional()
                 }
         )
     }
@@ -144,4 +164,6 @@ class MyAlertDialogFragment : RxDialogFragment() {
     }
 
     private fun getTitle(): String? = titleBinding?.editTextProblemTitle?.text?.toString()
+
+    private fun getOptional(): String? = if (arguments.containsKey(ARGS_OPTIONAL)) arguments.getString(ARGS_OPTIONAL) else null
 }

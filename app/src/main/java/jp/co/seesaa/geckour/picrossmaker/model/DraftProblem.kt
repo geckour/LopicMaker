@@ -12,7 +12,7 @@ import java.util.*
 @Table
 data class DraftProblem(
         @Setter("id") @PrimaryKey(autoincrement = true) val id: Long = -1L,
-        @Setter("title") @Column var title: String = "no title",
+        @Setter("title") @Column(indexed = true) var title: String = "no title",
         @Setter("keys_horizontal") @Column val keysHorizontal: Problem.KeysCluster = Problem.KeysCluster(),
         @Setter("keys_vertical") @Column val keysVertical: Problem.KeysCluster = Problem.KeysCluster(),
         @Setter("thumb") @Column @Nullable var thumb: Bitmap? = null,

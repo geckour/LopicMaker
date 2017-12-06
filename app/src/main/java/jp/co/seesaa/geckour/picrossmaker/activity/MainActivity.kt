@@ -4,16 +4,19 @@ import android.content.DialogInterface
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.design.widget.NavigationView
-import android.support.v4.view.GravityCompat
 import android.util.Size
+import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toolbar
 import com.trello.rxlifecycle2.components.RxActivity
 import jp.co.seesaa.geckour.picrossmaker.fragment.ProblemsFragment
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.ActivityMainBinding
 import jp.co.seesaa.geckour.picrossmaker.fragment.DraftProblemsFragment
 import jp.co.seesaa.geckour.picrossmaker.fragment.EditorFragment
+import jp.co.seesaa.geckour.picrossmaker.fragment.SearchFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
 
@@ -24,7 +27,12 @@ class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListen
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
-        setActionBar(binding.appBarMain.toolbar)
+        binding.appBarMain?.appBar?.apply {
+            val toolbar = LayoutInflater.from(this@MainActivity).inflate(R.layout.toolbar_main, null) as Toolbar
+            removeAllViews()
+            addView(toolbar)
+            setActionBar(toolbar)
+        }
 
         binding.navView.setNavigationItemSelectedListener(this)
 
@@ -35,11 +43,12 @@ class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListen
     }
 
     override fun onBackPressed() {
-        val drawer = binding.drawerLayout
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
-            drawer.closeDrawer(GravityCompat.START)
-        } else {
-            super.onBackPressed()
+        binding.drawerLayout.apply {
+            if (isDrawerOpen(Gravity.START)) {
+                closeDrawer(Gravity.START)
+            } else {
+                super.onBackPressed()
+            }
         }
     }
 
@@ -56,12 +65,12 @@ class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListen
         when (id) {
             R.id.nav_problem -> {
                 val fragment = ProblemsFragment.newInstance()
-                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(null).commit()
+                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(ProblemsFragment.tag).commit()
             }
 
             R.id.nav_draft -> {
                 val fragment = DraftProblemsFragment.newInstance()
-                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(null).commit()
+                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(DraftProblemsFragment.tag).commit()
             }
 
             R.id.nav_editor -> {
@@ -79,17 +88,18 @@ class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListen
 
             }
 
-            R.id.nav_share -> {
-
+            R.id.nav_search -> {
+                val fragment = SearchFragment.createInstance()
+                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(SearchFragment.tag).commit()
             }
         }
 
-        binding.drawerLayout.closeDrawer(GravityCompat.START)
+        binding.drawerLayout.closeDrawer(Gravity.START)
         return true
     }
 
     override fun onCanvasSizeError(size: Size) {
-        showSnackbar(binding.appBarMain.contentMain.container, R.string.problem_fragment_error_invalid_size)
+        binding.appBarMain?.contentMain?.container?.let { showSnackbar(it, R.string.problem_fragment_error_invalid_size) }
     }
 
     override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: MyAlertDialogFragment.RequestCode, resultCode: Int, result: Any?) {

@@ -39,14 +39,4 @@ class UniqueSolutionCounter(solver: ISolver, val size: Point): SolverDecorator<I
         }
         return this.lowerBound
     }
-
-    private fun getSolutionString(model: IntArray): String {
-        return StringBuilder().apply {
-            append("\n")
-            model.forEachIndexed { index, i ->
-                append("$i ")
-                if ((index + 1).rem(size.x) == 0) append("\n")
-            }
-        }.toString()
-    }
 }

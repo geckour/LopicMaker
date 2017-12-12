@@ -293,18 +293,19 @@ open class CanvasUtil(val size: Point) {
         return cellsInColumn
     }
 
-    fun getThumbnailImage(): Bitmap {
+    fun getThumbnailImage(cells: List<Cell>? = null): Bitmap {
+        val cs = cells ?: this.cells
         val u = 5f
         val image = Bitmap.createBitmap(size.x * u.toInt(), size.y * u.toInt(), Bitmap.Config.ARGB_8888)
         val canvas = Canvas(image)
         val paint = Paint()
         paint.color = Color.BLACK
         paint.style = Paint.Style.FILL
-        for (cell in cells) {
-            if (cell.getState()) {
+        for (c in cs) {
+            if (c.getState()) {
                 val path = Path()
-                val left = cell.coordinate.x * u
-                val top = cell.coordinate.y * u
+                val left = c.coordinate.x * u
+                val top = c.coordinate.y * u
                 path.addRect(left, top, left + u, top + u, Path.Direction.CW)
                 path.close()
                 canvas.drawPath(path, paint)

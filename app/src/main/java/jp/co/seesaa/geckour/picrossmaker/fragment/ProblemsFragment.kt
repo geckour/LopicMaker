@@ -2,26 +2,32 @@ package jp.co.seesaa.geckour.picrossmaker.fragment
 
 import android.databinding.DataBindingUtil
 import android.os.Bundle
+import android.support.design.widget.AppBarLayout
+import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
-import jp.co.seesaa.geckour.picrossmaker.async
+import jp.co.seesaa.geckour.picrossmaker.api.ApiClient
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentProblemsBinding
 import jp.co.seesaa.geckour.picrossmaker.fragment.adapter.ProblemsListAdapter
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
 import jp.co.seesaa.geckour.picrossmaker.model.Problem
-import jp.co.seesaa.geckour.picrossmaker.ui
-import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
-import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
+import jp.co.seesaa.geckour.picrossmaker.util.*
+import jp.co.seesaa.geckour.picrossmaker.util.ViewUtil.showSnackbar
 import kotlinx.coroutines.experimental.Job
+import timber.log.Timber
 
 class ProblemsFragment: RxFragment() {
 
     companion object {
+        val TAG: String = ProblemsFragment::class.java.simpleName
+
         fun newInstance(): ProblemsFragment = ProblemsFragment()
     }
 
@@ -43,11 +49,20 @@ class ProblemsFragment: RxFragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
+        mainActivity()?.apply {
+            toolbar.viewTreeObserver.apply {
+                removeOnDrawListener(layoutListenerForClear)
+                addOnGlobalLayoutListener(layoutListenerForSet)
+            }
+        }
+        (mainActivity()?.toolbar?.layoutParams as? AppBarLayout.LayoutParams)?.scrollFlags =
+                AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS
+
         adapter = getAdapter()
         fetchProblems()
 
-        (activity as MainActivity).binding.appBarMain.fab
-                .apply {
+        mainActivity()?.binding?.appBarMain?.fab
+                ?.apply {
                     setImageResource(R.drawable.ic_add_white_24px)
                     setOnClickListener {
                         run {
@@ -85,17 +100,21 @@ class ProblemsFragment: RxFragment() {
     override fun onResume() {
         super.onResume()
 
-        (activity as MainActivity).actionBar?.setTitle(R.string.app_name)
-
-        (activity as MainActivity).binding.appBarMain.fab.visibility = View.VISIBLE
+        mainActivity()?.apply {
+            actionBar?.setTitle(R.string.app_name)
+            binding.appBarMain?.fab?.show()
+        }
     }
 
     override fun onPause() {
         super.onPause()
+
         jobList.apply {
             forEach { it.cancel() }
             clear()
         }
+
+        (mainActivity()?.toolbar?.layoutParams as? AppBarLayout.LayoutParams)?.scrollFlags = 0
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -119,7 +138,7 @@ class ProblemsFragment: RxFragment() {
     private fun getAdapter(): ProblemsListAdapter =
             ProblemsListAdapter(object: ProblemsListAdapter.IListener {
                 override fun onClickProblemItem(problem: Problem) {
-                    val fragment = EditorFragment.newInstance(problem.id, EditorFragment.ArgKeys.PROBLEM_ID)
+                    val fragment = EditorFragment.newInstance(Pair(EditorFragment.ArgKeys.PROBLEM_ID, problem.id))
                     if (fragment != null) {
                         fragmentManager.beginTransaction()
                                 .replace(R.id.container, fragment)
@@ -128,50 +147,80 @@ class ProblemsFragment: RxFragment() {
                     }
                 }
 
-                override fun onLongClickProblemItem(problem: Problem): Boolean = true
+                override fun onLongClickProblemItem(problem: Problem): Boolean  = true
+
+                override fun onRegister(problem: Problem) {
+                    ApiClient().registerProblem(problem.parse())
+                            .subscribeOn(Schedulers.newThread())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .compose(bindToLifecycle())
+                            .subscribe({ result ->
+                                mainActivity()?.binding?.appBarMain?.contentMain?.container?.apply {
+                                    showSnackbar(this, result.message)
+                                }
+                            }, { throwable ->
+                                Timber.e(throwable)
+                                mainActivity()?.binding?.appBarMain?.contentMain?.container?.apply {
+                                    showSnackbar(this, R.string.problem_fragment_error_failure_register)
+                                }
+                            })
+                }
 
                 override fun onBind() {
-                    binding.textIndicateEmpty.visibility = View.GONE
+                    ui(jobList) { binding.textIndicateEmpty.visibility = View.GONE }
                 }
 
                 override fun onAllUnbind() {
-                    binding.textIndicateEmpty.visibility = View.VISIBLE
+                    ui(jobList) { binding.textIndicateEmpty.visibility = View.VISIBLE }
                 }
             })
 
     private fun getItemTouchHelper(): ItemTouchHelper {
-        return ItemTouchHelper(object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
-            override fun onMove(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?, target: RecyclerView.ViewHolder?): Boolean = false
+        return ItemTouchHelper(
+                object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+                    override fun onMove(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?, target: RecyclerView.ViewHolder?): Boolean = false
 
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder?, direction: Int) {
-                val position = viewHolder?.adapterPosition
-                if (position != null) {
-                    ui(jobList, { showSnackbar(activity.findViewById(R.id.container), R.string.problem_fragment_error_failure_delete) }) {
-                        val deleteNum = async {
-                            OrmaProvider.db.deleteFromProblem()
-                                    .idEq(adapter.getProblemByIndex(position)?.id ?: -1)
-                                    .execute()
-                        }.await()
+                    override fun onSwiped(viewHolder: RecyclerView.ViewHolder?, direction: Int) {
+                        val position = viewHolder?.adapterPosition
+                        if (position != null) {
+                            mainActivity()?.binding?.appBarMain?.contentMain?.container?.apply {
+                                ui(jobList, { showSnackbar(activity.findViewById(R.id.container), R.string.problem_fragment_error_failure_delete) }) {
+                                    val id = adapter.getProblemByIndex(position)?.id ?: -1
 
-                        if (deleteNum > 0) {
-                            showSnackbar(activity.findViewById(R.id.container),
-                                    R.string.problem_fragment_message_complete_delete)
-                            adapter.removeProblemsByIndex(position)
-                        } else {
-                            showSnackbar(activity.findViewById(R.id.container),
-                                    R.string.problem_fragment_error_failure_delete)
+                                    if (id > -1) {
+                                        async { OrmaProvider.db.selectFromProblem().idEq(id).firstOrNull() }.await()?.let { target ->
+                                            val deleteCount = async { OrmaProvider.db.deleteFromProblem().idEq(id).execute() }.await()
+
+                                            if (deleteCount > 0) {
+                                                adapter.removeProblemsByIndex(position)
+                                                showSnackbar(this@apply, R.string.problem_fragment_message_complete_delete, R.string.action_undo) {
+                                                    ui(jobList) {
+                                                        async {
+                                                            OrmaProvider.db.selectFromProblem().idEq(id).lastOrNull() ?: apply {
+                                                                OrmaProvider.db.insertIntoProblem(target)
+                                                            }
+                                                        }.await()
+                                                        adapter.insertProblem(position, target)
+                                                        showSnackbar(this@apply, R.string.problem_fragment_message_undo)
+                                                    }
+                                                }
+                                            } else {
+                                                ui(jobList) { showSnackbar(activity.findViewById(R.id.container), R.string.problem_fragment_error_failure_delete) }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-
                 }
-            }
-        })
+        )
     }
 
     private fun fetchProblems() {
         ui(jobList) {
-            async { adapter.clearProblems() }.await()
-            val problems = async { OrmaProvider.db.selectFromProblem().orderBy("editedAt").toList() }.await()
+            adapter.clearProblems()
+            val problems = OrmaProvider.db.selectFromProblem().draftEq(false).orderBy("editedAt").toList()
             adapter.addProblems(problems)
         }
     }

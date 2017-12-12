@@ -11,7 +11,7 @@ data class Cell(
         return state ?: false
     }
 
-    fun getStateNullable(): Boolean? {
+    fun getStateOrNull(): Boolean? {
         return state
     }
 

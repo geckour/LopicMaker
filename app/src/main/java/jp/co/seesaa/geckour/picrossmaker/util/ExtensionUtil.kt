@@ -1,9 +1,8 @@
 package jp.co.seesaa.geckour.picrossmaker.util
 
-import android.graphics.Bitmap
 import com.trello.rxlifecycle2.components.RxFragment
-import jp.co.seesaa.geckour.picrossmaker.App
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
+import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import jp.co.seesaa.geckour.picrossmaker.api.model.Problem as APIProblem
 import jp.co.seesaa.geckour.picrossmaker.model.Problem as DBProblem
 import jp.co.seesaa.geckour.picrossmaker.model.Problem.KeysCluster
@@ -18,24 +17,25 @@ import kotlin.coroutines.experimental.CoroutineContext
 fun DBProblem.parse(): APIProblem =
         APIProblem(
                 title = this.title,
-                genres = this.genres,
+                tags = this.tags,
                 keysHorizontal = this.keysHorizontal.keys.toList(),
                 keysVertical = this.keysVertical.keys.toList(),
-                thumb = App.Companion.gson.toJson(this.thumb),
                 createdAt = this.createdAt.time,
                 editedAt = this.editedAt.time
         )
 
-fun APIProblem.parse(): DBProblem =
-        DBProblem(
-                title = this.title,
-                genres = this.genres,
-                keysHorizontal = KeysCluster(*this.keysHorizontal.toTypedArray()),
-                keysVertical = KeysCluster(*this.keysVertical.toTypedArray()),
-                thumb = App.gson.fromJson(this.thumb, Bitmap::class.java),
-                createdAt = Timestamp(this.createdAt),
-                editedAt = Timestamp(this.editedAt)
-        )
+fun APIProblem.parse(algorithm: Algorithm, cells: List<Cell>, draft: Boolean = true): DBProblem {
+    return DBProblem(
+            title = this.title,
+            draft = draft,
+            tags = this.tags,
+            keysHorizontal = KeysCluster(*this.keysHorizontal.toTypedArray()),
+            keysVertical = KeysCluster(*this.keysVertical.toTypedArray()),
+            thumb = algorithm.getThumbnailImage(cells),
+            createdAt = Timestamp(this.createdAt),
+            editedAt = Timestamp(this.editedAt)
+    )
+}
 
 fun RxFragment.mainActivity(): MainActivity? = activity as? MainActivity
 

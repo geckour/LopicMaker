@@ -3,6 +3,7 @@ package jp.co.seesaa.geckour.picrossmaker.activity
 import android.content.DialogInterface
 import android.databinding.DataBindingUtil
 import android.os.Bundle
+import android.support.design.widget.AppBarLayout
 import android.support.design.widget.NavigationView
 import android.util.Size
 import android.view.Gravity
@@ -18,17 +19,25 @@ import jp.co.seesaa.geckour.picrossmaker.fragment.DraftProblemsFragment
 import jp.co.seesaa.geckour.picrossmaker.fragment.EditorFragment
 import jp.co.seesaa.geckour.picrossmaker.fragment.SearchFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
-import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment.Companion.showSnackbar
+import jp.co.seesaa.geckour.picrossmaker.util.ViewUtil.showSnackbar
 
 class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListener, EditorFragment.IListener, MyAlertDialogFragment.IListener {
 
     lateinit var binding: ActivityMainBinding
+    lateinit var toolbar: Toolbar
+    val layoutListenerForClear by lazy { { (toolbar.layoutParams as AppBarLayout.LayoutParams).scrollFlags = 0 } }
+    val layoutListenerForSet by lazy { {
+        (toolbar.layoutParams as AppBarLayout.LayoutParams).scrollFlags =
+                AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS
+    } }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         binding.appBarMain?.appBar?.apply {
-            val toolbar = LayoutInflater.from(this@MainActivity).inflate(R.layout.toolbar_main, null) as Toolbar
+            toolbar = (LayoutInflater.from(context).inflate(R.layout.toolbar_main, null) as Toolbar).apply {
+                viewTreeObserver.addOnGlobalLayoutListener(layoutListenerForClear)
+            }
             removeAllViews()
             addView(toolbar)
             setActionBar(toolbar)
@@ -44,11 +53,8 @@ class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListen
 
     override fun onBackPressed() {
         binding.drawerLayout.apply {
-            if (isDrawerOpen(Gravity.START)) {
-                closeDrawer(Gravity.START)
-            } else {
-                super.onBackPressed()
-            }
+            if (isDrawerOpen(Gravity.START)) closeDrawer(Gravity.START)
+            else super.onBackPressed()
         }
     }
 
@@ -65,12 +71,12 @@ class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListen
         when (id) {
             R.id.nav_problem -> {
                 val fragment = ProblemsFragment.newInstance()
-                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(ProblemsFragment.tag).commit()
+                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(ProblemsFragment.TAG).commit()
             }
 
             R.id.nav_draft -> {
                 val fragment = DraftProblemsFragment.newInstance()
-                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(DraftProblemsFragment.tag).commit()
+                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(DraftProblemsFragment.TAG).commit()
             }
 
             R.id.nav_editor -> {
@@ -84,9 +90,7 @@ class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListen
                 fragment.show(fragmentManager, MyAlertDialogFragment.getTag(requestCode))
             }
 
-            R.id.nav_setting -> {
-
-            }
+            R.id.nav_setting -> {}
 
             R.id.nav_search -> {
                 val fragment = SearchFragment.createInstance()
@@ -104,8 +108,7 @@ class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListen
 
     override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: MyAlertDialogFragment.RequestCode, resultCode: Int, result: Any?) {
         when (resultCode) {
-            DialogInterface.BUTTON_POSITIVE ->
-                onPositive(requestCode, result)
+            DialogInterface.BUTTON_POSITIVE -> onPositive(requestCode, result)
         }
         dialogInterface.dismiss()
     }
@@ -115,12 +118,7 @@ class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListen
             MyAlertDialogFragment.RequestCode.DEFINE_SIZE -> {
                 (result as? Size)?.let {
                     val fragment = EditorFragment.newInstance(it, this@MainActivity)
-                    if (fragment != null) {
-                        fragmentManager.beginTransaction()
-                                .replace(R.id.container, fragment)
-                                .addToBackStack(null)
-                                .commit()
-                    }
+                    if (fragment != null) fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(EditorFragment.TAG).commit()
                 }
             }
             else -> {}

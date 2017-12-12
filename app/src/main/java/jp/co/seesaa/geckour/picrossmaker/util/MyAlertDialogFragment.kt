@@ -42,8 +42,8 @@ class MyAlertDialogFragment : RxDialogFragment() {
                 resId: Int? = null,
                 cancelable: Boolean = true,
                 targetFragment: Fragment? = null
-        ): MyAlertDialogFragment = MyAlertDialogFragment()
-                .apply {
+        ): MyAlertDialogFragment =
+                MyAlertDialogFragment().apply {
                     arguments = Bundle().apply {
                         putString(ARGS_TITLE, title)
                         putString(ARGS_MESSAGE, message)
@@ -64,12 +64,6 @@ class MyAlertDialogFragment : RxDialogFragment() {
                     RequestCode.RENAME_TITLE -> "myAlertDialogFragmentRenameTitle"
                     else -> "myAlertDialogFragment"
                 }
-
-        fun showSnackbar(view: View, resId: Int) {
-            Snackbar.make(view,
-                    resId,
-                    Snackbar.LENGTH_SHORT).show()
-        }
     }
 
     interface IListener {

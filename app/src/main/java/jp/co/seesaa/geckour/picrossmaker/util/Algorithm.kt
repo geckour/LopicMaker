@@ -1,13 +1,28 @@
 package jp.co.seesaa.geckour.picrossmaker.util
 
 import android.graphics.Point
+import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import jp.co.seesaa.geckour.picrossmaker.model.KeyStates
 import org.sat4j.core.VecInt
 import org.sat4j.minisat.SolverFactory
 import org.sat4j.specs.ISolver
-import java.util.*
+import kotlin.collections.ArrayList
 
-class Algorithm(size: Point): CanvasUtil(size) {
+class Algorithm: CanvasUtil {
+    val keysHorizontal: ArrayList<List<Int>> = ArrayList()
+    val keysVertical: ArrayList<List<Int>> = ArrayList()
+
+    constructor(size: Point): super(size)
+    constructor(keysHorizontal: List<List<Int>>, keysVertical: List<List<Int>>): super(Point(keysHorizontal.size, keysVertical.size)) {
+        this.keysHorizontal.apply {
+            clear()
+            addAll(keysHorizontal)
+        }
+        this.keysVertical.apply {
+            clear()
+            addAll(keysVertical)
+        }
+    }
 
     enum class SatisfactionState {
         Satisfiable,
@@ -24,24 +39,40 @@ class Algorithm(size: Point): CanvasUtil(size) {
                 else -> SatisfactionState.Unsatisfiable
             }
 
+    suspend fun getSolution(): List<Cell> {
+        if (keysHorizontal.isNotEmpty() && keysVertical.isNotEmpty()) {
+            getSolutionCounter()?.apply {
+                if (solver.isSatisfiable) {
+                    return solver.findModel()?.toList()
+                            ?.take(keysHorizontal.size * keysVertical.size)
+                            ?.mapIndexed { i, value ->
+                                Cell(Point(i % keysHorizontal.size, i / keysHorizontal.size), value > 0)
+                            } ?: listOf()
+                }
+            }
+        }
+
+        return listOf()
+    }
+
     fun getSolutionCounter(): UniqueSolutionCounter? {
         solver.reset()
         KeyStates.varCount = size.x * size.y
 
-        val keysHorizontal: List<List<Int>> = (0 until size.y)
-                .mapTo(ArrayList()) {
+        val keysH: List<List<Int>> =
+                if (keysHorizontal.isEmpty()) (0 until size.y).mapTo(ArrayList()) {
                     val cellsInRow = getCellsInRow(it) ?: return null
                     getKeys(cellsInRow)
-                }
-        val keysVertical: List<List<Int>> = (0 until size.x)
-                .mapTo(ArrayList()) {
+                } else keysHorizontal
+        val keysV: List<List<Int>> =
+                if (keysVertical.isEmpty()) (0 until size.x).mapTo(ArrayList()) {
                     val cellsInColumn = getCellsInColumn(it) ?: return null
                     getKeys(cellsInColumn)
-                }
+                } else keysVertical
 
         // row
         (0 until size.y).forEach {
-            val keyStatesRow = KeyStates(size.x, keysHorizontal[it])
+            val keyStatesRow = KeyStates(size.x, keysH[it])
 
             if (tseytinEncode1(keyStatesRow).not()) return null
             if (tseytinEncode2(keyStatesRow).not()) return null
@@ -50,7 +81,7 @@ class Algorithm(size: Point): CanvasUtil(size) {
 
         // column
         (0 until size.x).forEach {
-            val keyStatesColumn = KeyStates(size.y, keysVertical[it])
+            val keyStatesColumn = KeyStates(size.y, keysV[it])
 
             if (tseytinEncode1(keyStatesColumn).not()) return null
             if (tseytinEncode2(keyStatesColumn).not()) return null

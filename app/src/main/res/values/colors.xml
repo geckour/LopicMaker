@@ -5,9 +5,10 @@
     <color name="colorAccent">#2979ff</color>
     <color name="colorBackground">#fafafa</color>
     <color name="colorBackgroundDark">#303030</color>
-    <color name="colorBackgroundEditText">#f0ffffff</color>
-    <color name="colorTextSecondary">#80000000</color>
-    <color name="colorTextHint">#2f000000</color>
+    <color name="colorBackgroundEditText">#e8ffffff</color>
+    <color name="colorTextPrimary">#b0000000</color>
+    <color name="colorTextSecondary">#c8ffffff</color>
+    <color name="colorTextHint">#50ffffff</color>
     <color name="colorSideNavStart">#0288d1</color>
     <color name="colorSideNavEnd">#01579b</color>
 </resources>

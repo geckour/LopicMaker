@@ -1,6 +1,7 @@
 package jp.co.seesaa.geckour.picrossmaker.fragment.adapter
 
 import android.databinding.DataBindingUtil
+import android.support.v7.widget.PopupMenu
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -23,6 +24,12 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
         val size = this.problems.size
         this.problems.addAll(problems)
         notifyItemRangeInserted(size - 1, problems.size)
+        onChangeProblems()
+    }
+
+    fun insertProblem(position: Int, problem: Problem) {
+        this.problems.add(position, problem)
+        notifyItemInserted(position)
         onChangeProblems()
     }
 
@@ -70,10 +77,28 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
         fun bindData(problem: Problem) {
             binding.thumb.setImageBitmap(problem.thumb)
             binding.title.text = problem.title
-            binding.point.text = binding.root.context
+            binding.size.text = binding.root.context
                     .getString(R.string.problem_fragment_item_point,
                             problem.keysVertical.keys.size,
                             problem.keysHorizontal.keys.size)
+            binding.tag.apply { text = context.getString(R.string.problem_fragment_text_tag_prefix, if (problem.tags.isEmpty()) "-" else problem.tags.joinToString(", ")) }
+            binding.opt.apply {
+                setOnClickListener {
+                    PopupMenu(this.context, this).apply {
+                        menuInflater.inflate(R.menu.popup_problem_opt, menu)
+                        setOnMenuItemClickListener { item ->
+                            when (item.itemId) {
+                                R.id.menu_register_problem -> {
+                                    listener.onRegister(problem)
+                                    true
+                                }
+                                else -> false
+                            }
+                        }
+                        show()
+                    }
+                }
+            }
             binding.root.apply {
                 setOnClickListener { listener.onClickProblemItem(problem) }
                 setOnLongClickListener { listener.onLongClickProblemItem(problem) }
@@ -84,6 +109,7 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
     interface IListener {
         fun onClickProblemItem(problem: Problem)
         fun onLongClickProblemItem(problem: Problem): Boolean
+        fun onRegister(problem: Problem)
         fun onBind()
         fun onAllUnbind()
     }

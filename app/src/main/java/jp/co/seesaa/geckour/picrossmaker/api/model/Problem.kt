@@ -7,15 +7,13 @@ data class Problem(
 
         val title: String,
 
-        val genres: List<String>,
+        val tags: List<String>,
 
         @SerializedName("keys_horizontal")
         val keysHorizontal: List<List<Int>>,
 
         @SerializedName("keys_vertical")
         val keysVertical: List<List<Int>>,
-
-        val thumb: String?,
 
         @SerializedName("created_at")
         val createdAt: Long = System.currentTimeMillis(),

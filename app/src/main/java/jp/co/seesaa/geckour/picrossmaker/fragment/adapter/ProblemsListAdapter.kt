@@ -4,13 +4,18 @@ import android.databinding.DataBindingUtil
 import android.support.v7.widget.PopupMenu
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.ItemProblemBinding
 import jp.co.seesaa.geckour.picrossmaker.model.Problem
 import java.util.*
 
-class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<ProblemsListAdapter.ViewHolder>() {
+class ProblemsListAdapter(
+        private val listener: IListener,
+        private val hasOpt: Boolean
+): RecyclerView.Adapter<ProblemsListAdapter.ViewHolder>() {
+
     private val problems: ArrayList<Problem> = ArrayList()
 
     fun clearProblems() {
@@ -83,20 +88,26 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
                             problem.keysHorizontal.keys.size)
             binding.tag.apply { text = context.getString(R.string.problem_fragment_text_tag_prefix, if (problem.tags.isEmpty()) "-" else problem.tags.joinToString(", ")) }
             binding.opt.apply {
-                setOnClickListener {
-                    PopupMenu(this.context, this).apply {
-                        menuInflater.inflate(R.menu.popup_problem_opt, menu)
-                        setOnMenuItemClickListener { item ->
-                            when (item.itemId) {
-                                R.id.menu_register_problem -> {
-                                    listener.onRegister(problem)
-                                    true
+                if (hasOpt) {
+                    visibility = View.VISIBLE
+                    setOnClickListener {
+                        PopupMenu(this.context, this).apply {
+                            menuInflater.inflate(R.menu.popup_problem_opt, menu)
+                            setOnMenuItemClickListener { item ->
+                                when (item.itemId) {
+                                    R.id.menu_register_problem -> {
+                                        listener.onRegister(problem)
+                                        true
+                                    }
+                                    else -> false
                                 }
-                                else -> false
                             }
+                            show()
                         }
-                        show()
                     }
+                } else {
+                    visibility = View.GONE
+                    setOnClickListener(null)
                 }
             }
             binding.root.apply {
@@ -110,6 +121,7 @@ class ProblemsListAdapter(val listener: IListener): RecyclerView.Adapter<Problem
         fun onClickProblemItem(problem: Problem)
         fun onLongClickProblemItem(problem: Problem): Boolean
         fun onRegister(problem: Problem)
+        fun onImport(problem: Problem)
         fun onBind()
         fun onAllUnbind()
     }

@@ -24,16 +24,17 @@ fun DBProblem.parse(): APIProblem =
                 editedAt = this.editedAt.time
         )
 
-fun APIProblem.parse(algorithm: Algorithm, cells: List<Cell>, draft: Boolean = true): DBProblem {
+fun APIProblem.parse(algorithm: Algorithm, cells: List<Cell>): DBProblem {
     return DBProblem(
             title = this.title,
-            draft = draft,
+            draft = false,
             tags = this.tags,
             keysHorizontal = KeysCluster(*this.keysHorizontal.toTypedArray()),
             keysVertical = KeysCluster(*this.keysVertical.toTypedArray()),
             thumb = algorithm.getThumbnailImage(cells),
             createdAt = Timestamp(this.createdAt),
-            editedAt = Timestamp(this.editedAt)
+            editedAt = Timestamp(this.editedAt),
+            source = jp.co.seesaa.geckour.picrossmaker.model.Problem.Source.SERVER_ORIGIN
     )
 }
 

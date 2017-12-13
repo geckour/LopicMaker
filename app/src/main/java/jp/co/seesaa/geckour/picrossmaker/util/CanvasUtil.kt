@@ -5,10 +5,12 @@ import android.util.Size
 import android.widget.ImageView
 import jp.co.seesaa.geckour.picrossmaker.Constant.unit
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
-import java.util.*
+import timber.log.Timber
+import kotlin.collections.ArrayList
 
 open class CanvasUtil(val size: Point) {
     val cells: ArrayList<Cell> = ArrayList()
+    val prevCells: ArrayList<Cell> = ArrayList()
     private val sizeBlankArea = Point(0, 0)
 
     init {

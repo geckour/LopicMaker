@@ -50,12 +50,13 @@
 
         <ImageView
             android:id="@+id/opt"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:background="?attr/selectableItemBackground"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="4dp"
+            android:src="@drawable/ic_more_vert_black_24px"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/thumb"
-            android:src="@drawable/ic_more_vert_black_24px" />
+            app:layout_constraintTop_toTopOf="@+id/thumb" />
 
     </android.support.constraint.ConstraintLayout>
 </layout>

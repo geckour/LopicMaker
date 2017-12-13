@@ -1,9 +1,6 @@
 package jp.co.seesaa.geckour.picrossmaker.api.model
 
-data class Result<out T>(
-        val success: Boolean,
-        val message: T
-) {
+data class Result<out T>(val message: T) {
     data class Data<out T>(
             val data: T
     ) {

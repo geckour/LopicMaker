@@ -3,25 +3,20 @@ package jp.co.seesaa.geckour.picrossmaker.api.service
 import io.reactivex.Single
 import jp.co.seesaa.geckour.picrossmaker.api.model.Problem
 import jp.co.seesaa.geckour.picrossmaker.api.model.Result
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.Query
+import jp.co.seesaa.geckour.picrossmaker.api.model.SearchQuery
+import retrofit2.http.*
 
 interface ApiService {
 
-    @POST("api/v1/post")
+    @POST("api/v1/problems")
     fun registerProblem(
             @Body
             problem: Problem
     ): Single<Result<String>>
 
-    @GET("api/v1/search")
+    @POST("api/v1/search/problems")
     fun search(
-            @Query("title")
-            title: String?,
-
-            @Query("genre")
-            genre: String?
+            @Body
+            query: SearchQuery
     ): Single<Result<Result.Data<Result.Data.Problems>>>
 }

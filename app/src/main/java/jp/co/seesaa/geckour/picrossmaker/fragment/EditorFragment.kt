@@ -22,9 +22,9 @@ import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
 import jp.co.seesaa.geckour.picrossmaker.model.Problem
 import jp.co.seesaa.geckour.picrossmaker.util.*
-import jp.co.seesaa.geckour.picrossmaker.util.ViewUtil.showSnackbar
 import kotlinx.coroutines.experimental.Job
 import org.sat4j.specs.TimeoutException
+import timber.log.Timber
 import java.sql.Timestamp
 import kotlin.collections.ArrayList
 
@@ -160,7 +160,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
     override fun onResume() {
         super.onResume()
 
-        mainActivity()?.binding?.appBarMain?.fab?.apply {
+        mainActivity()?.binding?.appBarMain?.fabRight?.apply {
             tag = Mode.Edit
             setImageResource(R.drawable.ic_crop_free_white_24px)
             setOnClickListener {
@@ -186,6 +186,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
             forEach { it.cancel() }
             clear()
         }
+        mainActivity()?.binding?.appBarMain?.fabLeft?.hide()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -328,16 +329,27 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
         return true
     }
 
+    private var prevAction: Int = MotionEvent.ACTION_CANCEL
     private fun onTouchCanvas(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                 pointPrev0.set(-1f, -1f)
                 pointPrev1.set(-1f, -1f)
 
+                showUndoButtonIfAvailable()
                 refreshSaveMenuIcon()
             }
 
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_MOVE -> {
+                when (prevAction) {
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                        algorithm.prevCells.apply {
+                            clear()
+                            addAll(algorithm.cells.map { it.copy() })
+                        }
+                    }
+                }
+
                 if (event.action == MotionEvent.ACTION_MOVE) satisfactionState = Algorithm.SatisfactionState.Unsatisfiable
 
                 val pointCurrent = PointF(event.x, event.y)
@@ -350,14 +362,15 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                 if (!coordCurrent.equals(coordPrev.x, coordPrev.y)) {
                     val cell = algorithm.getCellByCoordinate(coordCurrent) ?: return true
 
-                    if (event.action == MotionEvent.ACTION_MOVE) {
-                        val cellPrev = algorithm.getCellByCoordinate(coordPrev) ?: run {
-                            pointPrev0.set(-1f, -1f)
-                            return true
+                    when (event.action) {
+                        MotionEvent.ACTION_MOVE -> {
+                            val cellPrev = algorithm.getCellByCoordinate(coordPrev) ?: run {
+                                pointPrev0.set(-1f, -1f)
+                                return true
+                            }
+                            cell.setState(cellPrev.getState())
                         }
-                        cell.setState(cellPrev.getState())
-                    } else {
-                        cell.setState(!cell.getState())
+                        else -> cell.setState(!cell.getState())
                     }
 
                     val bitmap = algorithm.onEditCanvasImage((binding.canvas.drawable as BitmapDrawable).bitmap, cell, true)
@@ -366,12 +379,13 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                 pointPrev0.set(pointCurrent)
             }
         }
+        prevAction = event.action
 
         return true
     }
 
     private fun getMode(): Mode? =
-            mainActivity()?.binding?.appBarMain?.fab?.tag as? Mode
+            mainActivity()?.binding?.appBarMain?.fabRight?.tag as? Mode
 
     private fun onRefresh(savedInstanceState: Bundle?) {
         when {
@@ -381,7 +395,12 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                         OrmaProvider.db.selectFromProblem().idEq(this@EditorFragment.problemId).valueOrNull()?.let {
                             this@EditorFragment.size.set(it.keysVertical.keys.size, it.keysHorizontal.keys.size)
                             this@EditorFragment.algorithm = Algorithm(size)
-                            return@async this@EditorFragment.algorithm.setCells(savedInstanceState?.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) } ?: it.catalog.cells)
+                            val cells = savedInstanceState?.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) } ?: it.catalog.cells
+                            algorithm.prevCells.apply {
+                                clear()
+                                addAll(cells)
+                            }
+                            return@async this@EditorFragment.algorithm.setCells(cells)
                         }
                     }.await()
                     binding.canvas.setImageBitmap(bitmap)
@@ -447,12 +466,40 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
             keysInColumn.add(algorithm.getKeys(algorithm.getCellsInColumn(it) ?: return@forEach))
         }
 
-        return Problem(id, title, draft, genres, Problem.KeysCluster(*(keysInRow.toTypedArray())), Problem.KeysCluster(*(keysInColumn.toTypedArray())), thumb, catalog = Cell.Catalog(algorithm.cells))
+        return Problem(
+                id,
+                title,
+                draft,
+                genres,
+                Problem.KeysCluster(*(keysInRow.toTypedArray())),
+                Problem.KeysCluster(*(keysInColumn.toTypedArray())),
+                thumb,
+                catalog = Cell.Catalog(algorithm.cells)
+        )
+    }
+
+    private fun showUndoButtonIfAvailable() {
+        if (algorithm.prevCells.isNotEmpty()) {
+            mainActivity()?.binding?.appBarMain?.fabLeft?.apply {
+                setImageResource(R.drawable.ic_undo_black_24px)
+                setOnClickListener {
+                    val bitmap = algorithm.setCells(algorithm.prevCells)
+                    algorithm.prevCells.clear()
+                    binding.canvas.setImageBitmap(bitmap)
+                    hide()
+                }
+                show()
+            }
+        }
     }
 
     private fun refreshSaveMenuIcon() {
         this.menu?.apply {
-            ui(jobList) {
+            ui(jobList, {
+                if (it is UninitializedPropertyAccessException) {
+                    findItem(R.id.action_save)?.icon = activity.getDrawable(R.drawable.ic_save_white_24px).apply { setTint(Color.WHITE) }
+                }
+            }) {
                 satisfactionState = algorithm.getSolutionCounter()?.let {
                     val count =
                             try { async { it.countSolutions() }.await() }

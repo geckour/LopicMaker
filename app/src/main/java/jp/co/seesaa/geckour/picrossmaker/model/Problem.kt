@@ -17,7 +17,26 @@ data class Problem(
         @Setter("thumb") @Column @Nullable var thumb: Bitmap?,
         @Setter("created_at") @Column val createdAt: Timestamp = Timestamp(System.currentTimeMillis()),
         @Setter("edited_at") @Column var editedAt: Timestamp = Timestamp(System.currentTimeMillis()),
+        @Setter("source") @Column var source: Source = Source.OWN,
         @Setter("catalog") @Column var catalog: Cell.Catalog = Cell.Catalog(ArrayList())
 ) {
+    enum class Source {
+        OWN,
+        SERVER_ORIGIN,
+        SERVER_OTHER,
+        OTHER
+    }
+
     class KeysCluster(vararg val keys: List<Int>)
+
+    @StaticTypeAdapter(targetType = Source::class, serializedType = String::class)
+    class SourceSerializer {
+        companion object {
+            @JvmStatic
+            fun serialize(source: Source): String = source.name
+
+            @JvmStatic
+            fun deserialize(name: String): Source = Source.valueOf(name)
+        }
+    }
 }

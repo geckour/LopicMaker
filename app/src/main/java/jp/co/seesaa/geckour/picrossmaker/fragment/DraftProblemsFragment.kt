@@ -10,15 +10,11 @@ import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
-import jp.co.seesaa.geckour.picrossmaker.util.async
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentProblemsBinding
 import jp.co.seesaa.geckour.picrossmaker.fragment.adapter.ProblemsListAdapter
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
 import jp.co.seesaa.geckour.picrossmaker.model.Problem
-import jp.co.seesaa.geckour.picrossmaker.util.ui
-import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
-import jp.co.seesaa.geckour.picrossmaker.util.ViewUtil.showSnackbar
-import jp.co.seesaa.geckour.picrossmaker.util.mainActivity
+import jp.co.seesaa.geckour.picrossmaker.util.*
 import kotlinx.coroutines.experimental.Job
 
 class DraftProblemsFragment: RxFragment() {
@@ -49,15 +45,15 @@ class DraftProblemsFragment: RxFragment() {
 
         mainActivity()?.apply {
             toolbar.viewTreeObserver.apply {
-                removeOnDrawListener(layoutListenerForClear)
-                addOnGlobalLayoutListener(layoutListenerForSet)
+                removeOnDrawListener(onClearScrollFlags)
+                addOnGlobalLayoutListener(onSetScrollFlags)
             }
         }
 
         adapter = getAdapter()
         fetchDraftProblems()
 
-        mainActivity()?.binding?.appBarMain?.fab
+        mainActivity()?.binding?.appBarMain?.fabRight
                 ?.apply {
                     setImageResource(R.drawable.ic_add_white_24px)
                     setOnClickListener {
@@ -72,12 +68,13 @@ class DraftProblemsFragment: RxFragment() {
                     }
                 }
 
-        binding.recyclerView.layoutManager = LinearLayoutManager(activity)
-        binding.recyclerView.adapter = adapter
+        binding.recyclerView.let {
+            it.layoutManager = LinearLayoutManager(activity)
+            it.adapter = this@DraftProblemsFragment.adapter
 
-        val itemTouchHelper = getItemTouchHelper()
-        itemTouchHelper.attachToRecyclerView(binding.recyclerView)
-        binding.recyclerView.addItemDecoration(itemTouchHelper)
+            val itemTouchHelper = getItemTouchHelper().apply { attachToRecyclerView(binding.recyclerView) }
+            it.addItemDecoration(itemTouchHelper)
+        }
 
         binding.swipeRefresh.setOnRefreshListener {
             binding.swipeRefresh.isRefreshing = true
@@ -95,7 +92,7 @@ class DraftProblemsFragment: RxFragment() {
 
         mainActivity()?.apply {
             actionBar?.setTitle(R.string.action_bar_title_draft)
-            binding.appBarMain?.fab?.show()
+            binding.appBarMain?.fabRight?.show()
         }
     }
 
@@ -143,6 +140,8 @@ class DraftProblemsFragment: RxFragment() {
 
                         override fun onLongClickProblemItem(problem: Problem): Boolean = true
 
+                        override fun onImport(problem: Problem) {}
+
                         override fun onRegister(problem: Problem) {}
 
                         override fun onBind() {
@@ -152,7 +151,7 @@ class DraftProblemsFragment: RxFragment() {
                         override fun onAllUnbind() {
                             binding.textIndicateEmpty.visibility = View.VISIBLE
                         }
-                    })
+                    }, false)
 
     private fun getItemTouchHelper(): ItemTouchHelper {
         return ItemTouchHelper(object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {

@@ -19,14 +19,14 @@ import jp.co.seesaa.geckour.picrossmaker.fragment.DraftProblemsFragment
 import jp.co.seesaa.geckour.picrossmaker.fragment.EditorFragment
 import jp.co.seesaa.geckour.picrossmaker.fragment.SearchFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
-import jp.co.seesaa.geckour.picrossmaker.util.ViewUtil.showSnackbar
+import jp.co.seesaa.geckour.picrossmaker.util.showSnackbar
 
 class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListener, EditorFragment.IListener, MyAlertDialogFragment.IListener {
 
     lateinit var binding: ActivityMainBinding
     lateinit var toolbar: Toolbar
-    val layoutListenerForClear by lazy { { (toolbar.layoutParams as AppBarLayout.LayoutParams).scrollFlags = 0 } }
-    val layoutListenerForSet by lazy { {
+    val onClearScrollFlags by lazy { { (toolbar.layoutParams as AppBarLayout.LayoutParams).scrollFlags = 0 } }
+    val onSetScrollFlags by lazy { {
         (toolbar.layoutParams as AppBarLayout.LayoutParams).scrollFlags =
                 AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS
     } }
@@ -36,12 +36,13 @@ class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListen
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         binding.appBarMain?.appBar?.apply {
             toolbar = (LayoutInflater.from(context).inflate(R.layout.toolbar_main, null) as Toolbar).apply {
-                viewTreeObserver.addOnGlobalLayoutListener(layoutListenerForClear)
+                viewTreeObserver.addOnGlobalLayoutListener(onClearScrollFlags)
             }
             removeAllViews()
             addView(toolbar)
             setActionBar(toolbar)
         }
+        binding.appBarMain?.fabLeft?.hide()
 
         binding.navView.setNavigationItemSelectedListener(this)
 

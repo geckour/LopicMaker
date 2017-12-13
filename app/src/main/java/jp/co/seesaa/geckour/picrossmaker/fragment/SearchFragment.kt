@@ -1,9 +1,12 @@
 package jp.co.seesaa.geckour.picrossmaker.fragment
 
 import android.databinding.DataBindingUtil
+import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.AppBarLayout
 import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,11 +18,9 @@ import jp.co.seesaa.geckour.picrossmaker.api.ApiClient
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentProblemsBinding
 import jp.co.seesaa.geckour.picrossmaker.databinding.ToolbarSearchBinding
 import jp.co.seesaa.geckour.picrossmaker.fragment.adapter.ProblemsListAdapter
+import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
+import jp.co.seesaa.geckour.picrossmaker.util.*
 import jp.co.seesaa.geckour.picrossmaker.model.Problem
-import jp.co.seesaa.geckour.picrossmaker.util.Algorithm
-import jp.co.seesaa.geckour.picrossmaker.util.mainActivity
-import jp.co.seesaa.geckour.picrossmaker.util.parse
-import jp.co.seesaa.geckour.picrossmaker.util.ui
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
@@ -48,7 +49,7 @@ class SearchFragment: RxFragment() {
                     AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS
             toolbarBinding.buttonSearch.setOnClickListener {
                 adapter.clearProblems()
-                search(toolbarBinding.queryTitle.text.toString(), toolbarBinding.queryGenre.text.toString())
+                search(toolbarBinding.queryTitle.text.toString(), toolbarBinding.queryGenre.text.split(Regex("\\s")))
                         .subscribeOn(Schedulers.newThread())
                         .observeOn(AndroidSchedulers.mainThread())
                         .compose(bindToLifecycle())
@@ -58,7 +59,7 @@ class SearchFragment: RxFragment() {
                                 adapter.addProblems(it.message.data.problems.map {
                                     val algorithm = Algorithm(it.keysHorizontal, it.keysVertical)
                                     val cells = algorithm.getSolution()
-                                    it.parse(algorithm, cells, false)
+                                    it.parse(algorithm, cells)
                                 })
                             }
                         }, { t ->
@@ -86,16 +87,16 @@ class SearchFragment: RxFragment() {
 
         adapter = getAdapter()
 
-        binding.recyclerView.apply {
-            layoutManager = LinearLayoutManager(activity)
-            adapter = this@SearchFragment.adapter
+        binding.recyclerView.let {
+            it.layoutManager = LinearLayoutManager(activity)
+            it.adapter = this@SearchFragment.adapter
         }
     }
 
     override fun onResume() {
         super.onResume()
 
-        mainActivity()?.binding?.appBarMain?.fab?.hide()
+        mainActivity()?.binding?.appBarMain?.fabRight?.hide()
     }
 
     override fun onPause() {
@@ -110,8 +111,8 @@ class SearchFragment: RxFragment() {
         }
     }
 
-    private fun search(title: String?, genre: String?) =
-            ApiClient().search(title?.let { if (it.isNotBlank()) it else null }, genre?.let { if (it.isNotBlank()) it else null })
+    private fun search(title: String?, tags: List<String>?) =
+            ApiClient().search(title?.let { if (it.isNotBlank()) it else null }, tags?.filter { it.isNotBlank() }?.let { if (it.isEmpty()) null else it })
 
     private fun getAdapter(): ProblemsListAdapter =
             ProblemsListAdapter(object: ProblemsListAdapter.IListener {
@@ -121,6 +122,15 @@ class SearchFragment: RxFragment() {
 
                 override fun onRegister(problem: Problem) {}
 
+                override fun onImport(problem: Problem) {
+                    ui(jobList) {
+                        async { OrmaProvider.db.insertIntoProblem(problem) }.await()
+                        mainActivity()?.binding?.appBarMain?.contentMain?.container?.apply {
+                            showSnackbar(this, R.string.problem_fragment_message_complete_import)
+                        }
+                    }
+                }
+
                 override fun onBind() {
                     binding.textIndicateEmpty.visibility = View.GONE
                 }
@@ -128,5 +138,5 @@ class SearchFragment: RxFragment() {
                 override fun onAllUnbind() {
                     binding.textIndicateEmpty.visibility = View.VISIBLE
                 }
-            })
+            }, true)
 }

@@ -2,9 +2,10 @@
     <string name="app_name">Picross Maker</string>
     <string name="app_description">make your original Picross</string>
 
+    <string name="action_bar_title_main">作成済みの問題</string>
+    <string name="action_bar_title_draft">下書き</string>
     <string name="action_bar_title_edit">編集</string>
     <string name="action_bar_title_edit_with_title">編集 - %1$s</string>
-    <string name="action_bar_title_draft">下書き</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -53,6 +54,7 @@
     <string name="problem_fragment_message_undo">取り消しました</string>
     <string name="problem_fragment_text_tag_prefix">タグ: %1$s</string>
     <string name="problem_fragment_error_failure_register">問題の登録に失敗しました</string>
+    <string name="problem_fragment_message_complete_import">問題を取り込みました</string>
 
     <string name="editor_fragment_message_complete_save">保存しました</string>
     <string name="editor_fragment_error_failure_save">保存に失敗しました</string>

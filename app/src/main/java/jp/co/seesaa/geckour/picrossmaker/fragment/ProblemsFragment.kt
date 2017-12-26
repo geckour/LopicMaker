@@ -3,6 +3,7 @@ package jp.co.seesaa.geckour.picrossmaker.fragment
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.design.widget.AppBarLayout
+import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
@@ -10,9 +11,11 @@ import android.view.*
 import com.trello.rxlifecycle2.components.RxFragment
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
+import jp.co.seesaa.geckour.picrossmaker.App
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.api.ApiClient
+import jp.co.seesaa.geckour.picrossmaker.api.model.Result
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentProblemsBinding
 import jp.co.seesaa.geckour.picrossmaker.fragment.adapter.ProblemsListAdapter
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
@@ -53,8 +56,6 @@ class ProblemsFragment: RxFragment() {
                 addOnGlobalLayoutListener(onSetScrollFlags)
             }
         }
-        (mainActivity()?.toolbar?.layoutParams as? AppBarLayout.LayoutParams)?.scrollFlags =
-                AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS
 
         adapter = getAdapter()
         fetchProblems()
@@ -156,14 +157,12 @@ class ProblemsFragment: RxFragment() {
                             .compose(bindToLifecycle())
                             .subscribe({ result ->
                                 mainActivity()?.binding?.appBarMain?.contentMain?.container?.apply {
-                                    showSnackbar(this, result.message)
+                                    result.body()?.message?.data?.let { showSnackbar(this, getStrResIdFromStatusCode(it)) }
+                                    result.errorBody()?.string()?.let {
+                                        App.Companion.gson.fromJson<Result<Result.Data<String>>>(it)
+                                    }?.let {showSnackbar(this, getStrResIdFromStatusCode(it.message.data)) }
                                 }
-                            }, { throwable ->
-                                Timber.e(throwable)
-                                mainActivity()?.binding?.appBarMain?.contentMain?.container?.apply {
-                                    showSnackbar(this, R.string.problem_fragment_error_failure_register)
-                                }
-                            })
+                            }, { t -> Timber.e(t) })
                 }
 
                 override fun onBind() {
@@ -181,37 +180,41 @@ class ProblemsFragment: RxFragment() {
                     override fun onMove(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?, target: RecyclerView.ViewHolder?): Boolean = false
 
                     override fun onSwiped(viewHolder: RecyclerView.ViewHolder?, direction: Int) {
-                        val position = viewHolder?.adapterPosition
-                        if (position != null) {
-                            mainActivity()?.binding?.appBarMain?.contentMain?.container?.apply {
-                                ui(jobList, { showSnackbar(activity.findViewById(R.id.container), R.string.problem_fragment_error_failure_delete) }) {
-                                    val id = adapter.getProblemByIndex(position)?.id ?: -1
+                        viewHolder?.adapterPosition?.let { tryToDelete(it) }
+                    }
 
-                                    if (id > -1) {
-                                        async { OrmaProvider.db.selectFromProblem().idEq(id).firstOrNull() }.await()?.let { target ->
-                                            val deleteCount = async { OrmaProvider.db.deleteFromProblem().idEq(id).execute() }.await()
-
-                                            if (deleteCount > 0) {
-                                                adapter.removeProblemsByIndex(position)
-                                                showSnackbar(this@apply, R.string.problem_fragment_message_complete_delete, R.string.action_undo) {
-                                                    ui(jobList) {
-                                                        async {
-                                                            OrmaProvider.db.selectFromProblem().idEq(id).lastOrNull() ?: apply {
-                                                                OrmaProvider.db.insertIntoProblem(target)
-                                                            }
-                                                        }.await()
-                                                        adapter.insertProblem(position, target)
-                                                        showSnackbar(this@apply, R.string.problem_fragment_message_undo)
-                                                    }
-                                                }
-                                            } else {
-                                                ui(jobList) { showSnackbar(activity.findViewById(R.id.container), R.string.problem_fragment_error_failure_delete) }
-                                            }
-                                        }
-                                    }
+                    fun tryToDelete(position: Int) {
+                        mainActivity()?.binding?.appBarMain?.contentMain?.container?.apply {
+                            ui(jobList, { showSnackbar(this, R.string.problem_fragment_error_failure_delete) }) {
+                                adapter.getProblemByIndex(position)?.id?.let { if (it < 0) null else it }?.let { id ->
+                                    execDelete(id, position, this@apply)
                                 }
                             }
                         }
+                    }
+
+                    suspend fun execDelete(id: Long, adapterPosition: Int, rootView: View) {
+                        async { OrmaProvider.db.selectFromProblem().idEq(id).firstOrNull() }.await()?.let { target ->
+                            val deleteCount = async { OrmaProvider.db.deleteFromProblem().idEq(id).execute() }.await()
+                            onExecDelete(deleteCount, id, target, adapterPosition, rootView)
+                        }
+                    }
+
+                    fun onExecDelete(count: Int, id: Long, target: Problem, adapterPosition: Int, rootView: View) {
+                        if (count > 0) {
+                            adapter.removeProblemsByIndex(adapterPosition)
+                            showSnackbar(rootView, R.string.problem_fragment_message_complete_delete, R.string.action_undo, Snackbar.LENGTH_LONG) {
+                                ui(jobList) {
+                                    async {
+                                        OrmaProvider.db.selectFromProblem().idEq(id).lastOrNull() ?: apply {
+                                            OrmaProvider.db.insertIntoProblem(target)
+                                        }
+                                    }.await()
+                                    adapter.insertProblem(adapterPosition, target)
+                                    showSnackbar(rootView, R.string.problem_fragment_message_undo)
+                                }
+                            }
+                        } else showSnackbar(activity.findViewById(R.id.container), R.string.problem_fragment_error_failure_delete)
                     }
                 }
         )

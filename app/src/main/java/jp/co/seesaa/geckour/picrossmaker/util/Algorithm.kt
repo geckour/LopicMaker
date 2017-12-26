@@ -9,19 +9,13 @@ import org.sat4j.specs.ISolver
 import kotlin.collections.ArrayList
 
 class Algorithm: CanvasUtil {
-    val keysHorizontal: ArrayList<List<Int>> = ArrayList()
-    val keysVertical: ArrayList<List<Int>> = ArrayList()
+    private var keysHorizontal: List<List<Int>> = listOf()
+    private var keysVertical: List<List<Int>> = listOf()
 
     constructor(size: Point): super(size)
     constructor(keysHorizontal: List<List<Int>>, keysVertical: List<List<Int>>): super(Point(keysHorizontal.size, keysVertical.size)) {
-        this.keysHorizontal.apply {
-            clear()
-            addAll(keysHorizontal)
-        }
-        this.keysVertical.apply {
-            clear()
-            addAll(keysVertical)
-        }
+        this.keysHorizontal = keysHorizontal
+        this.keysVertical = keysVertical
     }
 
     enum class SatisfactionState {

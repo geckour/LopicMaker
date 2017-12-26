@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <Toolbar
+    <android.support.v7.widget.Toolbar
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:contentInsetLeft="0dp"
@@ -53,7 +53,9 @@
                 android:layout_marginTop="6dp"
                 android:background="@drawable/bg_edit_text"
                 android:hint="@string/hint_query_genre"
+                android:maxLines="1"
                 android:padding="4dp"
+                android:singleLine="true"
                 android:textColor="@color/colorTextSecondary"
                 android:textColorHint="@color/colorTextHint"
                 android:textCursorDrawable="@null"
@@ -76,5 +78,5 @@
                 app:layout_constraintBottom_toBottomOf="@+id/query_genre"
                 app:layout_constraintEnd_toEndOf="parent" />
         </android.support.constraint.ConstraintLayout>
-    </Toolbar>
+    </android.support.v7.widget.Toolbar>
 </layout>

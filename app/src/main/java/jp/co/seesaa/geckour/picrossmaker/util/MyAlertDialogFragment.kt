@@ -5,14 +5,13 @@ import android.content.Context
 import android.content.DialogInterface
 import android.databinding.DataBindingUtil
 import android.os.Bundle
-import android.support.design.widget.Snackbar
 import android.util.Size
 import android.view.LayoutInflater
-import android.view.View
 import com.trello.rxlifecycle2.components.RxDialogFragment
+import jp.co.seesaa.geckour.picrossmaker.App
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.DialogDefineSizeBinding
-import jp.co.seesaa.geckour.picrossmaker.databinding.DialogDefineTitleBinding
+import jp.co.seesaa.geckour.picrossmaker.databinding.DialogDefineTitleAndTagsBinding
 import timber.log.Timber
 
 class MyAlertDialogFragment : RxDialogFragment() {
@@ -70,8 +69,10 @@ class MyAlertDialogFragment : RxDialogFragment() {
         fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: RequestCode, resultCode: Int, result: Any? = null)
     }
 
+    data class ProblemSpecifyData(val title: String, val tags: List<String>)
+
     private var sizeBinding: DialogDefineSizeBinding? = null
-    private var titleBinding: DialogDefineTitleBinding? = null
+    private var problemBinding: DialogDefineTitleAndTagsBinding? = null
     private var listener: IListener? = null
 
     override fun onAttach(context: Context?) {
@@ -88,35 +89,41 @@ class MyAlertDialogFragment : RxDialogFragment() {
                 setTitle(arguments.getString(ARGS_TITLE))
                 setMessage(arguments.getString(ARGS_MESSAGE))
                 setNegativeButton(
-                        R.string.dialog_alert_cancel,
+                        R.string.dialog_alert_button_cancel,
                         { dialog, _ -> dialog.dismiss() })
-                if (requestCode == RequestCode.CONFIRM_BEFORE_SAVE)
+                if (requestCode == RequestCode.CONFIRM_BEFORE_SAVE) {
                     setNeutralButton(
-                        R.string.dialog_alert_rename,
-                        { dialog, which -> fireListener(dialog, which) })
+                            R.string.dialog_alert_button_create_new,
+                            { dialog, which -> fireListener(dialog, which) }
+                    )
+                }
                 setPositiveButton(
-                        if (requestCode == RequestCode.CONFIRM_BEFORE_SAVE) R.string.dialog_alert_overwrite else R.string.dialog_alert_confirm,
-                        { dialog, which -> fireListener(dialog, which) })
+                        if (requestCode == RequestCode.CONFIRM_BEFORE_SAVE) R.string.dialog_alert_button_overwrite else R.string.dialog_alert_button_confirm,
+                        { dialog, which -> fireListener(dialog, which) }
+                )
             }
 
             when (arguments.getInt(ARGS_RES_ID, -1)) {
                 R.layout.dialog_define_size -> {
                     sizeBinding = DataBindingUtil.inflate(LayoutInflater.from(activity), R.layout.dialog_define_size, null, false)
                     sizeBinding?.apply { builder.setView(root) }
-                    return builder.create()
                 }
 
-                R.layout.dialog_define_title -> {
-                    titleBinding = DataBindingUtil.inflate(LayoutInflater.from(activity), R.layout.dialog_define_title, null, false)
-                    titleBinding?.apply {
+                R.layout.dialog_define_title_and_tags -> {
+                    problemBinding = DataBindingUtil.inflate(LayoutInflater.from(activity), R.layout.dialog_define_title_and_tags, null, false)
+                    problemBinding?.apply {
                         builder.setView(root)
-                        getOptional()?.let { editTextProblemTitle.setText(it) }
+                        getOptional()?.let {
+                            App.Companion.gson.fromJson(it, ProblemSpecifyData::class.java).apply {
+                                editTextTitle.setText(this.title)
+                                editTextTags.setText(this.tags.joinToString(" "))
+                            }
+                        }
                     }
-                    return builder.create()
                 }
-
-                -1 -> return builder.create()
             }
+
+            return builder.create()
         }
 
         return super.onCreateDialog(savedInstanceState)
@@ -132,8 +139,8 @@ class MyAlertDialogFragment : RxDialogFragment() {
                     RequestCode.DEFINE_SIZE -> {
                         getSize()
                     }
-                    RequestCode.SAVE_DRAFT_PROBLEM, RequestCode.SAVE_PROBLEM -> {
-                        getTitle()
+                    RequestCode.SAVE_PROBLEM, RequestCode.SAVE_DRAFT_PROBLEM -> {
+                        App.gson.toJson(getProblemSpecifyData())
                     }
                     else -> getOptional()
                 }
@@ -157,7 +164,8 @@ class MyAlertDialogFragment : RxDialogFragment() {
         return Size(width, height)
     }
 
-    private fun getTitle(): String? = titleBinding?.editTextProblemTitle?.text?.toString()
+    private fun getProblemSpecifyData(): ProblemSpecifyData? =
+            problemBinding?.let { ProblemSpecifyData(it.editTextTitle.text.toString(), it.editTextTags.text.toString().getTagsList()) }
 
     private fun getOptional(): String? = if (arguments.containsKey(ARGS_OPTIONAL)) arguments.getString(ARGS_OPTIONAL) else null
 }

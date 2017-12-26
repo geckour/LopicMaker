@@ -25,16 +25,17 @@
     <string name="button_search">検索</string>
 
     <string name="hint_query_title">タイトルを入力…</string>
-    <string name="hint_query_genre">ジャンルを入力…</string>
+    <string name="hint_query_genre">タグを入力…</string>
 
     <string name="dialog_alert_width_size_define">横:</string>
     <string name="dialog_alert_height_size_define">縦:</string>
     <string name="dialog_alert_hint_size_define">1 ~ 128</string>
     <string name="dialog_alert_title_title_define">タイトル:</string>
-    <string name="dialog_alert_confirm">決定</string>
-    <string name="dialog_alert_cancel">キャンセル</string>
-    <string name="dialog_alert_overwrite">上書き</string>
-    <string name="dialog_alert_rename">タイトルを変更</string>
+    <string name="dialog_alert_title_tags_define">タグ:</string>
+    <string name="dialog_alert_button_confirm">決定</string>
+    <string name="dialog_alert_button_cancel">キャンセル</string>
+    <string name="dialog_alert_button_overwrite">上書き</string>
+    <string name="dialog_alert_button_create_new">新規問題として保存</string>
     <string name="dialog_alert_title_size_define">キャンバスのサイズ</string>
     <string name="dialog_alert_title_save_problem">保存</string>
     <string name="dialog_alert_title_save_draft_problem">下書きを保存</string>
@@ -42,7 +43,7 @@
     <string name="dialog_alert_message_save_problem">問題を保存しますか？</string>
     <string name="dialog_alert_message_save_draft_problem_exist_multiple_solution">この問題のヒントキーからは複数の解が導かれます。下書きとして保存しますか？</string>
     <string name="dialog_alert_message_save_draft_problem_unsatisfiable">この問題は解くことができません。下書きとして保存しますか？</string>
-    <string name="dialog_alert_message_confirm_before_save">同じタイトルの問題が存在します。上書き保存しますか？</string>
+    <string name="dialog_alert_message_confirm_before_save">上書き保存しますか？新しい問題 / 下書きとして保存しますか？</string>
 
     <string name="problem_fragment_message_empty">まだ問題が作成されていません。\n右下の+ボタンから作成してください</string>
     <string name="problem_fragment_message_empty_draft">まだ下書きが作成されていません。\n右下の+ボタンから作成してください</string>
@@ -53,7 +54,6 @@
     <string name="problem_fragment_message_complete_delete">削除しました</string>
     <string name="problem_fragment_message_undo">取り消しました</string>
     <string name="problem_fragment_text_tag_prefix">タグ: %1$s</string>
-    <string name="problem_fragment_error_failure_register">問題の登録に失敗しました</string>
     <string name="problem_fragment_message_complete_import">問題を取り込みました</string>
 
     <string name="editor_fragment_message_complete_save">保存しました</string>
@@ -61,4 +61,13 @@
     <string name="editor_fragment_error_invalid_title">有効なタイトルを指定してください</string>
 
     <string name="popup_item_title_register">問題をサーバーに投稿</string>
+
+    <string name="accessibility_desc_drawer_open">ドロワーを開く</string>
+    <string name="accessibility_desc_drawer_close">ドロワーを閉じる</string>
+
+    <string name="api_message_accepted">問題を登録しました</string>
+    <string name="api_message_no_such_problem">問題が見つかりませんでした</string>
+    <string name="api_message_unsolvable">この問題は解くことができません</string>
+    <string name="api_message_invalid_request">問題の登録に失敗しました</string>
+    <string name="api_message_unknown_error">エラーが発生しました</string>
 </resources>

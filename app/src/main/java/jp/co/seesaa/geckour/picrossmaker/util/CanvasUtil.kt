@@ -5,7 +5,6 @@ import android.util.Size
 import android.widget.ImageView
 import jp.co.seesaa.geckour.picrossmaker.Constant.unit
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
-import timber.log.Timber
 import kotlin.collections.ArrayList
 
 open class CanvasUtil(val size: Point) {
@@ -275,24 +274,24 @@ open class CanvasUtil(val size: Point) {
 
     fun getCellsInColumn(index: Int): List<Cell>? {
         if (index < 0 || size.x < index) return null
-        val cellsInRow: ArrayList<Cell> = ArrayList()
+        val cellsInColumn: ArrayList<Cell> = ArrayList()
         for (i in 0 until size.y) {
             val cell = getCellByCoordinate(Point(index, i)) ?: return null
-            cellsInRow.add(cell)
-        }
-
-        return cellsInRow
-    }
-
-    fun getCellsInRow(index: Int): List<Cell>? {
-        if (index < 0 || size.y < index) return null
-        val cellsInColumn: ArrayList<Cell> = ArrayList()
-        for (i in 0 until size.x) {
-            val cell = getCellByCoordinate(Point(i, index)) ?: return null
             cellsInColumn.add(cell)
         }
 
         return cellsInColumn
+    }
+
+    fun getCellsInRow(index: Int): List<Cell>? {
+        if (index < 0 || size.y < index) return null
+        val cellsInRow: ArrayList<Cell> = ArrayList()
+        for (i in 0 until size.x) {
+            val cell = getCellByCoordinate(Point(i, index)) ?: return null
+            cellsInRow.add(cell)
+        }
+
+        return cellsInRow
     }
 
     fun getThumbnailImage(cells: List<Cell>? = null): Bitmap {

@@ -53,7 +53,7 @@ dependencies {
     def okhttp_version = '3.8.0'
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+    androidTestImplementation('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
     testImplementation 'junit:junit:4.12'
@@ -82,7 +82,9 @@ dependencies {
 
     implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
     implementation "com.squareup.retrofit2:adapter-rxjava2:$retrofit_version"
-    implementation "com.squareup.retrofit2:converter-gson:$retrofit_version"
+    implementation("com.squareup.retrofit2:converter-gson:$retrofit_version", {
+        exclude group: 'com.google.code.gson', module: 'gson'
+    })
     implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
     implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
 
@@ -102,8 +104,5 @@ repositories {
     mavenCentral()
     maven { url "https://jitpack.io" }
     maven { url "http://dl.bintray.com/kotlin/kotlin-eap-1.1" }
-    maven {
-        url 'https://maven.google.com/'
-        name 'Google'
-    }
+    google()
 }

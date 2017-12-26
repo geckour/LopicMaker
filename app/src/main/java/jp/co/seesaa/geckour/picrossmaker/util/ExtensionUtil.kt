@@ -1,5 +1,7 @@
 package jp.co.seesaa.geckour.picrossmaker.util
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.trello.rxlifecycle2.components.RxFragment
 import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
@@ -11,6 +13,7 @@ import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
+import timber.log.Timber
 import java.sql.Timestamp
 import kotlin.coroutines.experimental.CoroutineContext
 
@@ -45,12 +48,14 @@ fun <T> async(context: CoroutineContext = CommonPool, block: suspend CoroutineSc
 
 fun ui(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> Unit) =
         launch(UI) {
-                try {
-                        block()
-                } catch (e: Exception) {
-                        e.printStackTrace()
-                        onError(e)
+                try { block() }
+                catch (e: Exception) {
+                    Timber.e(e)
+                    onError(e)
                 }
-        }.apply {
-                managerList.add(this)
-        }
+        }.apply { managerList.add(this) }
+
+inline fun <reified T> Gson.fromJson(json: String): T = this.fromJson<T>(json, object: TypeToken<T>() {}.type)
+
+fun String.getTagsList(): List<String> =
+        this.split(" ")

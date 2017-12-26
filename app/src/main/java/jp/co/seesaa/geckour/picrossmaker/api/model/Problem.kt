@@ -7,7 +7,7 @@ data class Problem(
 
         val title: String,
 
-        val tags: List<String>,
+        val tags: List<String> = listOf(),
 
         @SerializedName("keys_horizontal")
         val keysHorizontal: List<List<Int>>,
@@ -16,8 +16,8 @@ data class Problem(
         val keysVertical: List<List<Int>>,
 
         @SerializedName("created_at")
-        val createdAt: Long = System.currentTimeMillis(),
+        val createdAt: Long,
 
         @SerializedName("edited_at")
-        val editedAt: Long = System.currentTimeMillis()
+        val editedAt: Long
 )

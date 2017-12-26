@@ -6,6 +6,6 @@
         android:id="@+id/action_save"
         android:title="@string/action_save"
         android:icon="@drawable/ic_bookmark_black_24px"
-        android:showAsAction="ifRoom" />
+        app:showAsAction="ifRoom" />
 
 </menu>

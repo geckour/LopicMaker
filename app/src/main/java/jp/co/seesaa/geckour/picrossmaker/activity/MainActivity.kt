@@ -5,13 +5,14 @@ import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.design.widget.AppBarLayout
 import android.support.design.widget.NavigationView
+import android.support.v7.app.ActionBarDrawerToggle
+import android.support.v7.widget.Toolbar
 import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toolbar
-import com.trello.rxlifecycle2.components.RxActivity
+import com.trello.rxlifecycle2.components.support.RxAppCompatActivity
 import jp.co.seesaa.geckour.picrossmaker.fragment.ProblemsFragment
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.ActivityMainBinding
@@ -21,10 +22,11 @@ import jp.co.seesaa.geckour.picrossmaker.fragment.SearchFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.showSnackbar
 
-class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListener, EditorFragment.IListener, MyAlertDialogFragment.IListener {
+class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, EditorFragment.IListener, MyAlertDialogFragment.IListener {
 
     lateinit var binding: ActivityMainBinding
     lateinit var toolbar: Toolbar
+    lateinit var drawerToggle: ActionBarDrawerToggle
     val onClearScrollFlags by lazy { { (toolbar.layoutParams as AppBarLayout.LayoutParams).scrollFlags = 0 } }
     val onSetScrollFlags by lazy { {
         (toolbar.layoutParams as AppBarLayout.LayoutParams).scrollFlags =
@@ -34,14 +36,19 @@ class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListen
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+
         binding.appBarMain?.appBar?.apply {
             toolbar = (LayoutInflater.from(context).inflate(R.layout.toolbar_main, null) as Toolbar).apply {
                 viewTreeObserver.addOnGlobalLayoutListener(onClearScrollFlags)
             }
             removeAllViews()
             addView(toolbar)
-            setActionBar(toolbar)
+            setSupportActionBar(toolbar)
+
+            drawerToggle = ActionBarDrawerToggle(this@MainActivity, binding.drawerLayout, toolbar, R.string.accessibility_desc_drawer_open, R.string.accessibility_desc_drawer_close)
+            binding.drawerLayout.addDrawerListener(drawerToggle)
         }
+
         binding.appBarMain?.fabLeft?.hide()
 
         binding.navView.setNavigationItemSelectedListener(this)
@@ -50,6 +57,12 @@ class MainActivity : RxActivity(), NavigationView.OnNavigationItemSelectedListen
             val fragment = ProblemsFragment.newInstance()
             fragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
         }
+    }
+
+    override fun onPostCreate(savedInstanceState: Bundle?) {
+        super.onPostCreate(savedInstanceState)
+
+        drawerToggle.syncState()
     }
 
     override fun onBackPressed() {

@@ -11,7 +11,7 @@ data class Problem(
         @Setter("id") @PrimaryKey(autoincrement = true) val id: Long = -1L,
         @Setter("title") @Column(indexed = true) var title: String = "no title",
         @Setter("draft") @Column(indexed = true) var draft: Boolean = true,
-        @Setter("tags") @Column val tags: List<String> = listOf(),
+        @Setter("tags") @Column var tags: List<String> = listOf(),
         @Setter("keys_horizontal") @Column val keysHorizontal: KeysCluster = KeysCluster(),
         @Setter("keys_vertical") @Column val keysVertical: KeysCluster = KeysCluster(),
         @Setter("thumb") @Column @Nullable var thumb: Bitmap?,

@@ -7,6 +7,7 @@ import jp.co.seesaa.geckour.picrossmaker.api.model.Result
 import jp.co.seesaa.geckour.picrossmaker.api.model.SearchQuery
 import jp.co.seesaa.geckour.picrossmaker.api.service.ApiService
 import jp.co.seesaa.geckour.picrossmaker.util.OkHttpProvider
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -24,7 +25,7 @@ class ApiClient {
             .build()
             .create(ApiService::class.java)
 
-    fun registerProblem(problem: Problem): Single<Result<String>> = service.registerProblem(problem)
+    fun registerProblem(problem: Problem): Single<Response<Result<Result.Data<String>>>> = service.registerProblem(problem)
 
-    fun search(title: String?, tags: List<String>?): Single<Result<Result.Data<Result.Data.Problems>>> = service.search(SearchQuery(title, tags))
+    fun search(title: String?, tags: List<String>?): Single<Response<Result<Result.Data<Result.Data.Problems>>>> = service.search(title, tags)
 }

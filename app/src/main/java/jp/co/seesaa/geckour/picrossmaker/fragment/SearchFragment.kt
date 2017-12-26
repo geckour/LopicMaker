@@ -54,22 +54,22 @@ class SearchFragment: RxFragment() {
                         .observeOn(AndroidSchedulers.mainThread())
                         .compose(bindToLifecycle())
                         .subscribe({
-                            Timber.d("$it")
+                            if (!it.isSuccessful) {
+                                adapter.clearProblems()
+                                this@SearchFragment.binding.textIndicateEmpty.apply {
+                                    text = getString(R.string.problem_fragment_message_empty_search)
+                                    visibility = View.VISIBLE
+                                }
+                                return@subscribe
+                            }
                             ui(jobList) {
-                                adapter.addProblems(it.message.data.problems.map {
+                                it.body()?.message?.data?.problems?.map {
                                     val algorithm = Algorithm(it.keysHorizontal, it.keysVertical)
                                     val cells = algorithm.getSolution()
                                     it.parse(algorithm, cells)
-                                })
+                                }?.apply { adapter.addProblems(this) }
                             }
-                        }, { t ->
-                            adapter.clearProblems()
-                            this@SearchFragment.binding.textIndicateEmpty.apply {
-                                text = getString(R.string.problem_fragment_message_empty_search)
-                                visibility = View.VISIBLE
-                            }
-                            t.printStackTrace()
-                        })
+                        }, { t -> Timber.e(t) })
             }
         }
 
@@ -106,7 +106,7 @@ class SearchFragment: RxFragment() {
             binding.appBarMain?.appBar?.apply {
                 removeAllViews()
                 addView(toolbar)
-                setActionBar(toolbar)
+                setSupportActionBar(toolbar)
             }
         }
     }

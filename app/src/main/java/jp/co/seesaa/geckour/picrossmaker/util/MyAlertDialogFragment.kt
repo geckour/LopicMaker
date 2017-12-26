@@ -22,6 +22,7 @@ class MyAlertDialogFragment : RxDialogFragment() {
         SAVE_DRAFT_PROBLEM,
         CONFIRM_BEFORE_SAVE,
         RENAME_TITLE,
+        IMPORT_PROBLEM,
         UNKNOWN
     }
 
@@ -61,6 +62,7 @@ class MyAlertDialogFragment : RxDialogFragment() {
                     RequestCode.SAVE_PROBLEM -> "myAlertDialogFragmentSaveProblem"
                     RequestCode.CONFIRM_BEFORE_SAVE -> "myAlertDialogFragmentConfirmBeforeSave"
                     RequestCode.RENAME_TITLE -> "myAlertDialogFragmentRenameTitle"
+                    RequestCode.IMPORT_PROBLEM -> "myAlertDialogFragmentImportProblem"
                     else -> "myAlertDialogFragment"
                 }
     }

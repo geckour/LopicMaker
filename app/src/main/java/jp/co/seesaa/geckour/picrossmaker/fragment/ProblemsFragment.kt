@@ -148,8 +148,6 @@ class ProblemsFragment: RxFragment() {
 
                 override fun onLongClickProblemItem(problem: Problem): Boolean  = true
 
-                override fun onImport(problem: Problem) {}
-
                 override fun onRegister(problem: Problem) {
                     ApiClient().registerProblem(problem.parse())
                             .subscribeOn(Schedulers.newThread())

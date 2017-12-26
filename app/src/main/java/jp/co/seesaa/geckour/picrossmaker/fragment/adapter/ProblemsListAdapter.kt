@@ -92,7 +92,7 @@ class ProblemsListAdapter(
                     visibility = View.VISIBLE
                     setOnClickListener {
                         PopupMenu(this.context, this).apply {
-                            menuInflater.inflate(R.menu.popup_problem_opt, menu)
+                            menuInflater.inflate(R.menu.popup_opt_solvable_problem, menu)
                             setOnMenuItemClickListener { item ->
                                 when (item.itemId) {
                                     R.id.menu_register_problem -> {
@@ -121,7 +121,6 @@ class ProblemsListAdapter(
         fun onClickProblemItem(problem: Problem)
         fun onLongClickProblemItem(problem: Problem): Boolean
         fun onRegister(problem: Problem)
-        fun onImport(problem: Problem)
         fun onBind()
         fun onAllUnbind()
     }

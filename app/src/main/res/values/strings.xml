@@ -32,6 +32,7 @@
     <string name="dialog_alert_hint_size_define">1 ~ 128</string>
     <string name="dialog_alert_title_title_define">タイトル:</string>
     <string name="dialog_alert_title_tags_define">タグ:</string>
+    <string name="dialog_alert_title_import">問題の取り込み</string>
     <string name="dialog_alert_button_confirm">決定</string>
     <string name="dialog_alert_button_cancel">キャンセル</string>
     <string name="dialog_alert_button_overwrite">上書き</string>
@@ -43,7 +44,8 @@
     <string name="dialog_alert_message_save_problem">問題を保存しますか？</string>
     <string name="dialog_alert_message_save_draft_problem_exist_multiple_solution">この問題のヒントキーからは複数の解が導かれます。下書きとして保存しますか？</string>
     <string name="dialog_alert_message_save_draft_problem_unsatisfiable">この問題は解くことができません。下書きとして保存しますか？</string>
-    <string name="dialog_alert_message_confirm_before_save">上書き保存しますか？新しい問題 / 下書きとして保存しますか？</string>
+    <string name="dialog_alert_message_confirm_before_save">上書き保存しますか？\n新しい問題 / 下書きとして保存しますか？</string>
+    <string name="dialog_alert_message_import">この問題をローカルに保存しますか？</string>
 
     <string name="problem_fragment_message_empty">まだ問題が作成されていません。\n右下の+ボタンから作成してください</string>
     <string name="problem_fragment_message_empty_draft">まだ下書きが作成されていません。\n右下の+ボタンから作成してください</string>
@@ -54,7 +56,8 @@
     <string name="problem_fragment_message_complete_delete">削除しました</string>
     <string name="problem_fragment_message_undo">取り消しました</string>
     <string name="problem_fragment_text_tag_prefix">タグ: %1$s</string>
-    <string name="problem_fragment_message_complete_import">問題を取り込みました</string>
+    <string name="problem_fragment_message_complete_import">問題を保存しました</string>
+    <string name="problem_fragment_message_failure_import">問題の保存に失敗しました</string>
 
     <string name="editor_fragment_message_complete_save">保存しました</string>
     <string name="editor_fragment_error_failure_save">保存に失敗しました</string>

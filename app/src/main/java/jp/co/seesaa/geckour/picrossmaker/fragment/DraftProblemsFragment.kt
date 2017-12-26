@@ -140,8 +140,6 @@ class DraftProblemsFragment: RxFragment() {
 
                         override fun onLongClickProblemItem(problem: Problem): Boolean = true
 
-                        override fun onImport(problem: Problem) {}
-
                         override fun onRegister(problem: Problem) {}
 
                         override fun onBind() {

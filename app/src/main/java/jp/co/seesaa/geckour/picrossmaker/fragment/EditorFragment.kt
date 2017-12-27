@@ -149,8 +149,6 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                 }
             } else false
         }
-
-        (activity as MainActivity).binding.navView.menu.findItem(R.id.nav_editor).isChecked = true
     }
 
     override fun onAttach(context: Context?) {

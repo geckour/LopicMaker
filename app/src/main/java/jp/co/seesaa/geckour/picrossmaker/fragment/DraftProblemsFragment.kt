@@ -83,8 +83,6 @@ class DraftProblemsFragment: RxFragment() {
         }
 
         binding.textIndicateEmpty.setText(R.string.problem_fragment_message_empty_draft)
-
-        (activity as MainActivity).binding.navView.menu.findItem(R.id.nav_draft).isChecked = true
     }
 
     override fun onResume() {

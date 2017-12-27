@@ -51,7 +51,10 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
 
         binding.appBarMain?.fabLeft?.hide()
 
-        binding.navView.setNavigationItemSelectedListener(this)
+        binding.navView.apply {
+            setNavigationItemSelectedListener(this@MainActivity)
+            setCheckedItem(R.id.nav_problem)
+        }
 
         if (savedInstanceState == null) {
             val fragment = ProblemsFragment.newInstance()

@@ -15,7 +15,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 class ApiClient {
 
     companion object {
-        private val baseUrl = "172.16.21.15:8080"
+        private val baseUrl = "172.16.21.15:8080/pm"
     }
 
     private val service = Retrofit.Builder().client(OkHttpProvider.client)

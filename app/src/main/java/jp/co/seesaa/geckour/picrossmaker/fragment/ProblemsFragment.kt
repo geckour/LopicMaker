@@ -92,8 +92,6 @@ class ProblemsFragment: RxFragment() {
         }
 
         binding.textIndicateEmpty.setText(R.string.problem_fragment_message_empty)
-
-        (activity as MainActivity).binding.navView.menu.findItem(R.id.nav_problem).isChecked = true
     }
 
     override fun onResume() {

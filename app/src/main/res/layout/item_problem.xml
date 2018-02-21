@@ -14,9 +14,10 @@
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:scaleType="fitCenter"
+            android:tint="@color/colorBackgroundDark"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:srcCompat="@drawable/ic_menu_gallery" />
+            app:srcCompat="@drawable/ic_help_outline_black_24px" />
 
         <TextView
             android:id="@+id/size"
@@ -47,16 +48,6 @@
             app:layout_constraintStart_toStartOf="@id/size"
             app:layout_constraintTop_toBottomOf="@+id/title"
             tools:text="タグ: animal, cat" />
-
-        <ImageView
-            android:id="@+id/opt"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="4dp"
-            android:src="@drawable/ic_more_vert_black_24px"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/thumb" />
 
     </android.support.constraint.ConstraintLayout>
 </layout>

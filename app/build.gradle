@@ -8,12 +8,12 @@ androidExtensions {
 }
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion "26.0.2"
+    compileSdkVersion 27
+    buildToolsVersion "27.0.3"
     defaultConfig {
         applicationId "jp.co.seesaa.geckour.picrossmaker"
         minSdkVersion 21
-        targetSdkVersion 26
+        targetSdkVersion 27
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -44,7 +44,7 @@ android {
 }
 
 dependencies {
-    def android_support_version = '26.1.0'
+    def android_support_version = '27.0.2'
     def stetho_version = '1.5.0'
     def orma_version = '4.2.5'
     def rxLifecycle_version = '2.0.1'
@@ -73,9 +73,9 @@ dependencies {
     implementation "com.facebook.stetho:stetho:$stetho_version"
     implementation "com.facebook.stetho:stetho-okhttp3:$stetho_version"
 
-    implementation 'io.reactivex.rxjava2:rxjava:2.1.1'
+    implementation 'io.reactivex.rxjava2:rxjava:2.1.8'
     implementation 'io.reactivex.rxjava2:rxandroid:2.0.1'
-    implementation 'io.reactivex.rxjava2:rxkotlin:2.0.0'
+    implementation 'io.reactivex.rxjava2:rxkotlin:2.2.0'
     implementation "com.trello.rxlifecycle2:rxlifecycle:$rxLifecycle_version"
     implementation "com.trello.rxlifecycle2:rxlifecycle-components:$rxLifecycle_version"
     implementation "com.trello.rxlifecycle2:rxlifecycle-kotlin:$rxLifecycle_version"
@@ -90,7 +90,7 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.8.2'
 
-    implementation 'com.jakewharton.timber:timber:4.5.1'
+    implementation 'com.jakewharton.timber:timber:4.6.0'
 
     implementation 'com.github.yamamotoj:pikkel:0.3.3'
 

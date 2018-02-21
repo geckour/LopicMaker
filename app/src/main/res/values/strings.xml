@@ -6,6 +6,8 @@
     <string name="action_bar_title_draft">下書き</string>
     <string name="action_bar_title_edit">編集</string>
     <string name="action_bar_title_edit_with_title">編集 - %1$s</string>
+    <string name="action_bar_title_solve">求解</string>
+    <string name="action_bar_title_solve_with_title">求解 - %1$s</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -64,7 +66,12 @@
     <string name="editor_fragment_error_failure_save">保存に失敗しました</string>
     <string name="editor_fragment_error_invalid_title">有効なタイトルを指定してください</string>
 
-    <string name="popup_item_title_register">問題をサーバーに投稿</string>
+    <string name="solve_fragment_message_solved">求解成功</string>
+
+    <string name="popup_item_title_register">この問題をサーバーに投稿</string>
+    <string name="popup_item_title_solve">この問題を解く</string>
+    <string name="popup_item_title_edit">この問題を編集</string>
+    <string name="popup_item_title_delete">この問題を削除</string>
 
     <string name="accessibility_desc_drawer_open">ドロワーを開く</string>
     <string name="accessibility_desc_drawer_close">ドロワーを閉じる</string>

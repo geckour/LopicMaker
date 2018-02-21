@@ -1,4 +1,4 @@
-package jp.co.seesaa.geckour.picrossmaker.activity
+package jp.co.seesaa.geckour.picrossmaker.presentation.activity
 
 import android.content.DialogInterface
 import android.databinding.DataBindingUtil
@@ -13,12 +13,12 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import com.trello.rxlifecycle2.components.support.RxAppCompatActivity
-import jp.co.seesaa.geckour.picrossmaker.fragment.ProblemsFragment
+import jp.co.seesaa.geckour.picrossmaker.presentation.fragment.ProblemsFragment
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.ActivityMainBinding
-import jp.co.seesaa.geckour.picrossmaker.fragment.DraftProblemsFragment
-import jp.co.seesaa.geckour.picrossmaker.fragment.EditorFragment
-import jp.co.seesaa.geckour.picrossmaker.fragment.SearchFragment
+import jp.co.seesaa.geckour.picrossmaker.presentation.fragment.DraftProblemsFragment
+import jp.co.seesaa.geckour.picrossmaker.presentation.fragment.EditorFragment
+import jp.co.seesaa.geckour.picrossmaker.presentation.fragment.SearchFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.showSnackbar
 

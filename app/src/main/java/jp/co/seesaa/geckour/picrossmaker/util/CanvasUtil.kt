@@ -36,8 +36,20 @@ open class CanvasUtil(val size: Point) {
         this.cells.addAll(cells)
         var bitmap = createCanvasImage()
         this.cells
-                .filter { it.getState() }
+                .filter { it.getState() == Cell.State.Fill }
                 .forEach { bitmap = onEditCanvasImage(bitmap, it, true) }
+
+        return bitmap
+    }
+
+    fun overrideKeysFromCells(cells: List<Cell>): Bitmap? = clearExceptKeys(setCells(cells))
+
+    private fun clearExceptKeys(image: Bitmap?): Bitmap? {
+        var bitmap: Bitmap? = image
+        cells.forEach {
+            it.setState(Cell.State.Blank)
+            bitmap = onEditCanvasImage(bitmap, it, false)
+        }
 
         return bitmap
     }
@@ -155,13 +167,32 @@ open class CanvasUtil(val size: Point) {
         val canvas = Canvas(image)
         val paint = Paint()
         val path = Path()
+        paint.color = when (cell.getState()) {
+            Cell.State.Fill, Cell.State.MarkNotFill -> Color.BLACK
+            else -> Color.WHITE
+        }
+        when (cell.getState()) {
+            Cell.State.Fill, Cell.State.Blank -> {
+                val left = (sizeBlankArea.x + cell.coordinate.x) * unit.toFloat() + 1f
+                val top = (sizeBlankArea.y + cell.coordinate.y) * unit.toFloat() + 1f
+                val rect = RectF(left, top, left + unit.toFloat() - 2f, top + unit.toFloat() - 2f)
 
-        paint.style = Paint.Style.FILL
-        paint.color = if (cell.getState()) Color.BLACK else Color.WHITE
-        val left = (sizeBlankArea.x + cell.coordinate.x) * unit.toFloat() + 1f
-        val top = (sizeBlankArea.y + cell.coordinate.y) * unit.toFloat() + 1f
-        val rect = RectF(left, top, left + unit.toFloat() - 2f, top + unit.toFloat() - 2f)
-        path.addRect(rect, Path.Direction.CW)
+                paint.style = Paint.Style.FILL
+                path.addRect(rect, Path.Direction.CW)
+            }
+            else -> {
+                val left = (sizeBlankArea.x + cell.coordinate.x + 0.1f) * unit.toFloat() + 1f
+                val top = (sizeBlankArea.y + cell.coordinate.y + 0.1f) * unit.toFloat() + 1f
+                val rect = RectF(left, top, left + unit.toFloat() * 0.8f - 2f, top + unit.toFloat() * 0.8f - 2f)
+
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 2f
+                path.moveTo(rect.left, rect.top)
+                path.lineTo(rect.right, rect.bottom)
+                path.moveTo(rect.right, rect.top)
+                path.lineTo(rect.left, rect.bottom)
+            }
+        }
         canvas.drawPath(path, paint)
 
         return if (refreshKeys) refreshKeys(image, cell) else image
@@ -175,7 +206,7 @@ open class CanvasUtil(val size: Point) {
             var bitmap = createCanvasImage() ?: return image
 
             this.cells
-                    .filter(Cell::getState)
+                    .filter { it.getState() == Cell.State.Fill }
                     .forEach { bitmap = onEditCanvasImage(bitmap, it, true) ?: return null }
 
             return bitmap
@@ -184,7 +215,7 @@ open class CanvasUtil(val size: Point) {
         return null
     }
 
-    private fun refreshAllKeys(image: Bitmap): Bitmap {
+    private fun refreshKeysInLine(image: Bitmap): Bitmap {
         var bitmap = image
         val end = Math.max(size.x, size.y) - 1
         for (i in 0..end) {
@@ -195,7 +226,7 @@ open class CanvasUtil(val size: Point) {
         return bitmap
     }
 
-    private fun refreshKeys(image: Bitmap, cell: Cell): Bitmap {
+    fun refreshKeys(image: Bitmap, cell: Cell): Bitmap {
         val row = getCellsInRow(cell.coordinate.y) ?: return image
         val column = getCellsInColumn(cell.coordinate.x) ?: return image
         val keysRow = getKeys(row)
@@ -203,7 +234,7 @@ open class CanvasUtil(val size: Point) {
 
         var bitmap = refreshCanvasSize(image, Size(keysRow.size, keysColumn.size))
         bitmap = if (bitmap != null) {
-            refreshAllKeys(bitmap)
+            refreshKeysInLine(bitmap)
         } else {
             image
         }
@@ -255,8 +286,8 @@ open class CanvasUtil(val size: Point) {
     fun getKeys(cells: List<Cell>): List<Int> {
         val keys: ArrayList<Int> = arrayListOf(0)
         cells.forEachIndexed { i, cell ->
-            if ((keys.size > 1 || keys.last() != 0) && cells.getOrNull(i - 1)?.getState() != true && cell.getState()) keys.add(0) // □→■になった時にキー追加
-            if (cell.getState()) {
+            if ((keys.size > 1 || keys.last() != 0) && cells.getOrNull(i - 1)?.getState() != Cell.State.Fill && cell.getState() == Cell.State.Fill) keys.add(0) // □→■になった時にキー追加
+            if (cell.getState() == Cell.State.Fill) {
                 keys[keys.lastIndex] += 1
             }
         }
@@ -303,7 +334,7 @@ open class CanvasUtil(val size: Point) {
         paint.color = Color.BLACK
         paint.style = Paint.Style.FILL
         for (c in cs) {
-            if (c.getState()) {
+            if (c.getState() == Cell.State.Fill) {
                 val path = Path()
                 val left = c.coordinate.x * u
                 val top = c.coordinate.y * u

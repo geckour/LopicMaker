@@ -3,7 +3,7 @@ package jp.co.seesaa.geckour.picrossmaker.util
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.trello.rxlifecycle2.components.RxFragment
-import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
+import jp.co.seesaa.geckour.picrossmaker.presentation.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import jp.co.seesaa.geckour.picrossmaker.api.model.Problem as APIProblem
 import jp.co.seesaa.geckour.picrossmaker.model.Problem as DBProblem

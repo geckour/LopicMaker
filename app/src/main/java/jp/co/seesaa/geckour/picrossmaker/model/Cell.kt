@@ -4,18 +4,17 @@ import android.graphics.Point
 
 data class Cell(
         val coordinate: Point = Point(0, 0),
-        private var state: Boolean? = false
+        private var state: State = State.Blank
 ) {
-
-    fun getState(): Boolean {
-        return state ?: false
+    enum class State {
+        Fill,
+        Blank,
+        MarkNotFill
     }
 
-    fun getStateOrNull(): Boolean? {
-        return state
-    }
+    fun getState(): State = state
 
-    fun setState(state: Boolean?) {
+    fun setState(state: State) {
         this.state = state
     }
 

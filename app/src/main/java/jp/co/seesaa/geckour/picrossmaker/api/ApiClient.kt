@@ -4,7 +4,6 @@ import io.reactivex.Single
 import jp.co.seesaa.geckour.picrossmaker.App.Companion.gson
 import jp.co.seesaa.geckour.picrossmaker.api.model.Problem
 import jp.co.seesaa.geckour.picrossmaker.api.model.Result
-import jp.co.seesaa.geckour.picrossmaker.api.model.SearchQuery
 import jp.co.seesaa.geckour.picrossmaker.api.service.ApiService
 import jp.co.seesaa.geckour.picrossmaker.util.OkHttpProvider
 import retrofit2.Response
@@ -15,7 +14,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 class ApiClient {
 
     companion object {
-        private val baseUrl = "172.16.21.15:8080/pm"
+        private val baseUrl = "172.16.21.29:12443/pm"
     }
 
     private val service = Retrofit.Builder().client(OkHttpProvider.client)

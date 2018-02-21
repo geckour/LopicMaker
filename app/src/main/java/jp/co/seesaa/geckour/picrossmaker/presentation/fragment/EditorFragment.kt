@@ -1,4 +1,4 @@
-package jp.co.seesaa.geckour.picrossmaker.fragment
+package jp.co.seesaa.geckour.picrossmaker.presentation.fragment
 
 import android.content.Context
 import android.content.DialogInterface
@@ -9,14 +9,13 @@ import android.graphics.PointF
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
-import android.util.Log
 import android.util.Size
 import android.view.*
 import com.github.yamamotoj.pikkel.Pikkel
 import com.github.yamamotoj.pikkel.PikkelDelegate
 import com.trello.rxlifecycle2.components.RxFragment
 import jp.co.seesaa.geckour.picrossmaker.*
-import jp.co.seesaa.geckour.picrossmaker.activity.MainActivity
+import jp.co.seesaa.geckour.picrossmaker.presentation.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentEditorBinding
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
@@ -32,8 +31,9 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
     private var listener: IListener? = null
     private val size by state(Point(0, 0))
     private var problemId by state(-1L)
+    private var problem: Problem? = null
     private var draft by state(true)
-    lateinit private var binding: FragmentEditorBinding
+    private lateinit var binding: FragmentEditorBinding
     private val pointPrev0 = PointF(-1f, -1f)
     private val pointPrev1 = PointF(-1f, -1f)
     private var satisfactionState by state(Algorithm.SatisfactionState.Unsatisfiable)
@@ -92,18 +92,9 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
 
         setHasOptionsMenu(true)
 
-        problemId = if (arguments.containsKey(ArgKeys.PROBLEM_ID.name)) arguments.getLong(ArgKeys.PROBLEM_ID.name, -1) else -1
+        this.problemId = if (arguments.containsKey(ArgKeys.PROBLEM_ID.name)) arguments.getLong(ArgKeys.PROBLEM_ID.name, -1) else -1
 
-        draft = if (arguments.containsKey(ArgKeys.DRAFT.name)) arguments.getBoolean(ArgKeys.DRAFT.name, true) else true
-
-        if (!arguments.containsKey(ArgKeys.CANVAS_SIZE.name) && problemId >= 0) {
-            ui(jobList) {
-                val problem = async { OrmaProvider.db.selectFromProblem().idEq(problemId).valueOrNull() }.await()
-                problem?.apply { size.set(this.keysHorizontal.keys.size, this.keysVertical.keys.size) }
-            }
-        } else {
-            arguments.getSize(ArgKeys.CANVAS_SIZE.name).apply { size.set(this.width, this.height) }
-        }
+        this.draft = if (arguments.containsKey(ArgKeys.DRAFT.name)) arguments.getBoolean(ArgKeys.DRAFT.name, true) else true
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -115,18 +106,25 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        initCanvas(savedInstanceState)
+        if (!arguments.containsKey(ArgKeys.CANVAS_SIZE.name) && problemId > -1) {
+            ui(jobList) {
+                this@EditorFragment.problem = async { OrmaProvider.db.selectFromProblem().idEq(problemId).valueOrNull() }.await()
+                this@EditorFragment.problem?.apply {
+                    size.set(this.keysHorizontal.keys.size, this.keysVertical.keys.size)
+                    (activity as? MainActivity)?.supportActionBar?.title = getString(R.string.action_bar_title_edit_with_title, title)
+                } ?: run { (activity as? MainActivity)?.supportActionBar?.setTitle(R.string.action_bar_title_edit) }
+
+                initCanvas(savedInstanceState)
+            }
+        } else {
+            arguments.getSize(ArgKeys.CANVAS_SIZE.name).apply { size.set(this.width, this.height) }
+
+            initCanvas(savedInstanceState)
+        }
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-
-        if (problemId > -1) {
-            ui(jobList) {
-                val problem = async { OrmaProvider.db.selectFromProblem().idEq(problemId).valueOrNull() }.await()
-                problem?.title?.let { (activity as? MainActivity)?.actionBar?.setTitle(getString(R.string.action_bar_title_edit_with_title, it)) }
-            }
-        } else (activity as? MainActivity)?.actionBar?.setTitle(R.string.action_bar_title_edit)
 
         binding.canvas.setOnTouchListener { _, event -> onTouchCanvas(event) }
         binding.cover.setOnTouchListener { _, event ->
@@ -279,17 +277,14 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                                         Timber.e(e)
                                         null
                                     }
-                            val problem =
-                                    async { OrmaProvider.db.selectFromProblem().idEq(problemId).lastOrNull() }.await()?.apply {
-                                        draft = satisfactionState != Algorithm.SatisfactionState.Satisfiable
-                                        editedAt = Timestamp(System.currentTimeMillis())
-                                        specifyData?.let {
-                                            title = it.title
-                                            tags = it.tags
-                                        }
-                                    }
+                            this@EditorFragment.problem?.apply {
+                                draft = satisfactionState != Algorithm.SatisfactionState.Satisfiable
+                                editedAt = Timestamp(System.currentTimeMillis())
+                                specifyData?.let {
+                                    title = it.title
+                                    tags = it.tags
+                                }
 
-                            problem?.apply {
                                 async { OrmaProvider.db.relationOfProblem().upsert(this@apply) }.await()
                                 showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
                             }
@@ -374,7 +369,16 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                             }
                             cell.setState(cellPrev.getState())
                         }
-                        else -> cell.setState(!cell.getState())
+                        else -> {
+                            val state = cell.getState()
+                            cell.setState(
+                                    when (state) {
+                                        Cell.State.Fill -> Cell.State.Blank
+                                        Cell.State.Blank -> Cell.State.Fill
+                                        else -> state
+                                    }
+                            )
+                        }
                     }
 
                     val bitmap = algorithm.onEditCanvasImage((binding.canvas.drawable as BitmapDrawable).bitmap, cell, true)
@@ -394,9 +398,8 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
     private fun initCanvas(savedInstanceState: Bundle?) {
         if (this.problemId > -1) {
             ui(jobList) {
-                val problem = async { OrmaProvider.db.selectFromProblem().idEq(this@EditorFragment.problemId).valueOrNull() }.await()
                 val bitmap = async {
-                    problem?.let {
+                    this@EditorFragment.problem?.let {
                         val cells = savedInstanceState?.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) } ?: it.catalog.cells
                         algorithm.prevCells.apply {
                             clear()
@@ -515,7 +518,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
 
                     algorithm.getSatisfactionState(count)
                 } ?: let {
-                    Log.d("refreshSaveMenuIcon", "solutionCounter is null")
+                    Timber.d("solutionCounter is null")
                     Algorithm.SatisfactionState.Unsatisfiable
                 }
                 findItem(R.id.action_save)?.apply {
@@ -527,6 +530,6 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                     }
                 }
             }
-        } ?: Log.d("refreshSaveMenuIcon", "this.menu is null")
+        } ?: Timber.d("this.menu is null")
     }
 }

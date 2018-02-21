@@ -33,20 +33,32 @@ class Algorithm: CanvasUtil {
                 else -> SatisfactionState.Unsatisfiable
             }
 
-    suspend fun getSolution(): List<Cell> {
+    fun getSolution(): List<Cell> {
         if (keysHorizontal.isNotEmpty() && keysVertical.isNotEmpty()) {
             getSolutionCounter()?.apply {
                 if (solver.isSatisfiable) {
                     return solver.findModel()?.toList()
                             ?.take(keysHorizontal.size * keysVertical.size)
                             ?.mapIndexed { i, value ->
-                                Cell(Point(i % keysHorizontal.size, i / keysHorizontal.size), value > 0)
+                                Cell(Point(i % keysHorizontal.size, i / keysHorizontal.size), if (value > 0) Cell.State.Fill else Cell.State.Blank)
                             } ?: listOf()
                 }
             }
         }
 
         return listOf()
+    }
+
+    fun checkCellsWithSolution(cells: List<Cell>): Boolean {
+        val solution = getSolution()
+        if (solution.size != cells.size) return false
+
+        solution.map { it.getState() }.forEachIndexed { i, solutionState ->
+            val cellState = cells[i].getState()
+            if (cellState != Cell.State.MarkNotFill && solutionState != cellState) return false
+        }
+
+        return true
     }
 
     fun getSolutionCounter(): UniqueSolutionCounter? {

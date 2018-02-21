@@ -1,13 +1,10 @@
-package jp.co.seesaa.geckour.picrossmaker.fragment
+package jp.co.seesaa.geckour.picrossmaker.presentation.fragment
 
 import android.content.DialogInterface
 import android.databinding.DataBindingUtil
-import android.graphics.Rect
-import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.AppBarLayout
 import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,7 +16,7 @@ import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.api.ApiClient
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentProblemsBinding
 import jp.co.seesaa.geckour.picrossmaker.databinding.ToolbarSearchBinding
-import jp.co.seesaa.geckour.picrossmaker.fragment.adapter.ProblemsListAdapter
+import jp.co.seesaa.geckour.picrossmaker.presentation.fragment.adapter.ProblemsListAdapter
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
 import jp.co.seesaa.geckour.picrossmaker.util.*
 import jp.co.seesaa.geckour.picrossmaker.model.Problem
@@ -68,7 +65,7 @@ class SearchFragment: RxFragment(), MyAlertDialogFragment.IListener {
                                 it.body()?.message?.data?.problems?.map {
                                     val algorithm = Algorithm(it.keysHorizontal, it.keysVertical)
                                     val cells = algorithm.getSolution()
-                                    it.parse(algorithm, cells)
+                                    it.parse(algorithm, cells).apply { thumb = null }
                                 }?.apply { adapter.addProblems(this) }
                             }
                         }, { t -> Timber.e(t) })
@@ -155,27 +152,31 @@ class SearchFragment: RxFragment(), MyAlertDialogFragment.IListener {
     }
 
     private fun getAdapter(): ProblemsListAdapter =
-            ProblemsListAdapter(object: ProblemsListAdapter.IListener {
-                override fun onClickProblemItem(problem: Problem) {
-                    MyAlertDialogFragment.newInstance(
-                            title = getString(R.string.dialog_alert_title_import),
-                            message = getString(R.string.dialog_alert_message_import),
-                            optional = App.gson.toJson(problem),
-                            requestCode = MyAlertDialogFragment.RequestCode.IMPORT_PROBLEM,
-                            targetFragment = this@SearchFragment
-                    ).show(activity.fragmentManager, MyAlertDialogFragment.getTag(MyAlertDialogFragment.RequestCode.IMPORT_PROBLEM))
-                }
+            ProblemsListAdapter(
+                    object: ProblemsListAdapter.IListener {
+                        override fun onClickProblemItem(view: View, position: Int, problem: Problem, hasOpt: Boolean) {
+                            MyAlertDialogFragment.newInstance(
+                                    title = getString(R.string.dialog_alert_title_import),
+                                    message = getString(R.string.dialog_alert_message_import),
+                                    optional = App.gson.toJson(problem),
+                                    requestCode = MyAlertDialogFragment.RequestCode.IMPORT_PROBLEM,
+                                    targetFragment = this@SearchFragment
+                            ).show(activity.fragmentManager, MyAlertDialogFragment.getTag(MyAlertDialogFragment.RequestCode.IMPORT_PROBLEM))
+                        }
 
-                override fun onLongClickProblemItem(problem: Problem): Boolean = false
+                        override fun onLongClickProblemItem(problem: Problem): Boolean = false
 
-                override fun onRegister(problem: Problem) {}
+                        override fun onRegister(problem: Problem) {}
 
-                override fun onBind() {
-                    binding.textIndicateEmpty.visibility = View.GONE
-                }
+                        override fun onDelete(position: Int, problem: Problem) {}
 
-                override fun onAllUnbind() {
-                    binding.textIndicateEmpty.visibility = View.VISIBLE
-                }
-            }, false)
+                        override fun onBind() {
+                            binding.textIndicateEmpty.visibility = View.GONE
+                        }
+
+                        override fun onAllUnbind() {
+                            binding.textIndicateEmpty.visibility = View.VISIBLE
+                        }
+                    }, false
+            )
 }

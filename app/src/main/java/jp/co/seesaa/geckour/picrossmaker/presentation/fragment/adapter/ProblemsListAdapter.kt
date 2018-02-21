@@ -1,4 +1,4 @@
-package jp.co.seesaa.geckour.picrossmaker.fragment.adapter
+package jp.co.seesaa.geckour.picrossmaker.presentation.fragment.adapter
 
 import android.databinding.DataBindingUtil
 import android.support.v7.widget.PopupMenu
@@ -72,56 +72,34 @@ class ProblemsListAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val pos = holder.adapterPosition
         val problem = problems[pos]
-        holder.bindData(problem)
+        holder.bindData(pos, problem)
     }
 
     override fun getItemCount(): Int = problems.size
 
     inner class ViewHolder(private val binding: ItemProblemBinding): RecyclerView.ViewHolder(binding.root) {
 
-        fun bindData(problem: Problem) {
-            binding.thumb.setImageBitmap(problem.thumb)
+        fun bindData(position: Int, problem: Problem) {
+            problem.thumb?.apply { binding.thumb.setImageBitmap(this) }
             binding.title.text = problem.title
             binding.size.text = binding.root.context
                     .getString(R.string.problem_fragment_item_point,
                             problem.keysVertical.keys.size,
                             problem.keysHorizontal.keys.size)
             binding.tag.apply { text = context.getString(R.string.problem_fragment_text_tag_prefix, if (problem.tags.isEmpty()) "-" else problem.tags.joinToString(", ")) }
-            binding.opt.apply {
-                if (hasOpt) {
-                    visibility = View.VISIBLE
-                    setOnClickListener {
-                        PopupMenu(this.context, this).apply {
-                            menuInflater.inflate(R.menu.popup_opt_solvable_problem, menu)
-                            setOnMenuItemClickListener { item ->
-                                when (item.itemId) {
-                                    R.id.menu_register_problem -> {
-                                        listener.onRegister(problem)
-                                        true
-                                    }
-                                    else -> false
-                                }
-                            }
-                            show()
-                        }
-                    }
-                } else {
-                    visibility = View.GONE
-                    setOnClickListener(null)
-                }
-            }
             binding.root.apply {
-                setOnClickListener { listener.onClickProblemItem(problem) }
+                setOnClickListener { listener.onClickProblemItem(this, position, problem, hasOpt) }
                 setOnLongClickListener { listener.onLongClickProblemItem(problem) }
             }
         }
     }
 
     interface IListener {
-        fun onClickProblemItem(problem: Problem)
+        fun onClickProblemItem(view: View, position: Int, problem: Problem, hasOpt: Boolean)
         fun onLongClickProblemItem(problem: Problem): Boolean
         fun onRegister(problem: Problem)
         fun onBind()
+        fun onDelete(position: Int, problem: Problem)
         fun onAllUnbind()
     }
 }

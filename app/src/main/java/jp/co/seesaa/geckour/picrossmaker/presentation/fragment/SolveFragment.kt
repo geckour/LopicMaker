@@ -1,36 +1,27 @@
 package jp.co.seesaa.geckour.picrossmaker.presentation.fragment
 
-import android.databinding.DataBindingUtil
 import android.graphics.Point
 import android.graphics.PointF
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
-import android.view.*
-import com.github.yamamotoj.pikkel.Pikkel
-import com.github.yamamotoj.pikkel.PikkelDelegate
-import com.trello.rxlifecycle2.components.RxFragment
-import jp.co.seesaa.geckour.picrossmaker.*
-import jp.co.seesaa.geckour.picrossmaker.presentation.activity.MainActivity
+import android.support.v4.app.Fragment
+import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
+import jp.co.seesaa.geckour.picrossmaker.App
+import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentEditorBinding
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
 import jp.co.seesaa.geckour.picrossmaker.model.Problem
+import jp.co.seesaa.geckour.picrossmaker.presentation.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.util.*
 import kotlinx.coroutines.experimental.Job
 import java.sql.Timestamp
-import kotlin.collections.ArrayList
 
-class SolveFragment: RxFragment(), Pikkel by PikkelDelegate() {
-    private var problemId by state(-1L)
-    private var problem: Problem? = null
-    private lateinit var binding: FragmentEditorBinding
-    private val pointPrev0 = PointF(-1f, -1f)
-    private val pointPrev1 = PointF(-1f, -1f)
-    private var satisfactionState by state(Algorithm.SatisfactionState.Unsatisfiable)
-    private val algorithm: Algorithm by lazy { Algorithm(problem?.let { Point(it.keysHorizontal.keys.size, it.keysVertical.keys.size) } ?: Point(0, 0)) }
-    private val algorithm4ref: Algorithm by lazy { problem?.let { Algorithm(it.keysHorizontal.keys.toList(), it.keysVertical.keys.toList()) } ?: algorithm }
-    private val jobList: ArrayList<Job> = ArrayList()
+class SolveFragment : Fragment() {
 
     enum class ArgKeys {
         CANVAS_SIZE,
@@ -68,29 +59,43 @@ class SolveFragment: RxFragment(), Pikkel by PikkelDelegate() {
         val TAG: String = this::class.java.simpleName
     }
 
+    private var problemId = -1L
+    private var problem: Problem? = null
+    private lateinit var binding: FragmentEditorBinding
+    private val pointPrev0 = PointF(-1f, -1f)
+    private val pointPrev1 = PointF(-1f, -1f)
+    private var satisfactionState = Algorithm.SatisfactionState.Unsatisfiable
+    private val algorithm: Algorithm by lazy {
+        Algorithm(problem?.let { Point(it.keysHorizontal.keys.size, it.keysVertical.keys.size) }
+                ?: Point(0, 0))
+    }
+    private val algorithm4ref: Algorithm by lazy {
+        problem?.let { Algorithm(it.keysHorizontal.keys.toList(), it.keysVertical.keys.toList()) }
+                ?: algorithm
+    }
+    private val jobList: ArrayList<Job> = ArrayList()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        problemId = if (arguments.containsKey(ArgKeys.PROBLEM_ID.name)) arguments.getLong(ArgKeys.PROBLEM_ID.name, -1) else -1
+        problemId = arguments?.let { if (it.containsKey(ArgKeys.PROBLEM_ID.name)) it.getLong(ArgKeys.PROBLEM_ID.name, -1) else -1 } ?: -1
     }
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_editor, container, false)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+            FragmentEditorBinding.inflate(inflater, container, false).apply { binding = this }.root
 
-        return binding.root
-    }
-
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         // FIXME: 不正な問題IDを与えられた場合は前のFragmentに戻る・ダイアログを表示
-        if (!arguments.containsKey(ArgKeys.CANVAS_SIZE.name) && problemId > -1) {
+        if (arguments?.containsKey(ArgKeys.CANVAS_SIZE.name)?.not() != false && problemId > -1) {
             ui(jobList) {
-                this@SolveFragment.problem = async { OrmaProvider.db.selectFromProblem().idEq(problemId).valueOrNull() }.await()
+                this@SolveFragment.problem = async { OrmaProvider.db.selectFromProblem().idEq(problemId).valueOrNull() }?.await()
 
                 this@SolveFragment.problem?.apply {
-                    (activity as? MainActivity)?.supportActionBar?.title = getString(R.string.action_bar_title_solve_with_title, title)
-                } ?: run { (activity as? MainActivity)?.supportActionBar?.setTitle(R.string.action_bar_title_solve) }
+                    mainActivity?.supportActionBar?.title = getString(R.string.action_bar_title_solve_with_title, title)
+                }
+                        ?: run { mainActivity?.supportActionBar?.setTitle(R.string.action_bar_title_solve) }
 
                 initCanvas(savedInstanceState)
             }
@@ -115,8 +120,7 @@ class SolveFragment: RxFragment(), Pikkel by PikkelDelegate() {
                         if (event.pointerCount > 1) {
                             val p1 = PointF(event.getX(1), event.getY(1))
                             onScale(p0, p1)
-                        }
-                        else onDrag(p0)
+                        } else onDrag(p0)
                     }
                 }
             } else false
@@ -126,7 +130,7 @@ class SolveFragment: RxFragment(), Pikkel by PikkelDelegate() {
     override fun onResume() {
         super.onResume()
 
-        mainActivity()?.binding?.appBarMain?.fabRight?.apply {
+        mainActivity?.binding?.appBarMain?.fabRight?.apply {
             tag = TouchMode.Edit
             setImageResource(R.drawable.ic_crop_free_white_24px)
             setOnClickListener {
@@ -144,7 +148,7 @@ class SolveFragment: RxFragment(), Pikkel by PikkelDelegate() {
             show()
         }
 
-        mainActivity()?.binding?.appBarMain?.fabLeft?.apply {
+        mainActivity?.binding?.appBarMain?.fabLeft?.apply {
             tag = EditMode.Fill
             setImageResource(R.drawable.ic_fill)
             setOnClickListener {
@@ -170,16 +174,15 @@ class SolveFragment: RxFragment(), Pikkel by PikkelDelegate() {
             forEach { it.cancel() }
             clear()
         }
-        mainActivity()?.binding?.appBarMain?.fabLeft?.hide()
+        mainActivity?.binding?.appBarMain?.fabLeft?.hide()
     }
 
-    override fun onSaveInstanceState(outState: Bundle?) {
+    override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState?.putStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS, ArrayList(algorithm.cells.map { App.gson.toJson(it) }))
-        saveInstanceState(outState)
+        outState.putStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS, ArrayList(algorithm.cells.map { App.gson.toJson(it) }))
     }
 
-    private fun onScale (pointCurrent0: PointF, pointCurrent1: PointF): Boolean {
+    private fun onScale(pointCurrent0: PointF, pointCurrent1: PointF): Boolean {
         if (pointPrev0.x < 0f) pointPrev0.set(pointCurrent0)
         if (pointPrev1.x < 0f) pointPrev1.set(pointCurrent1)
         val scale = algorithm.getScale(algorithm.getPointDiff(pointPrev0, pointPrev1).length(), algorithm.getPointDiff(pointCurrent0, pointCurrent1).length())
@@ -226,7 +229,7 @@ class SolveFragment: RxFragment(), Pikkel by PikkelDelegate() {
                         }
                     }
 
-                    mainActivity()?.binding?.appBarMain?.contentMain?.container?.let {
+                    mainActivity?.binding?.appBarMain?.contentMain?.container?.let {
                         showSnackbar(it, R.string.solve_fragment_message_solved)
                     }
                 }
@@ -268,13 +271,13 @@ class SolveFragment: RxFragment(), Pikkel by PikkelDelegate() {
                                     when (state) {
                                         Cell.State.Fill, Cell.State.MarkNotFill -> Cell.State.Blank
                                         Cell.State.Blank -> {
-                                            val editMode = mainActivity()?.binding?.appBarMain?.fabLeft?.tag as? EditMode ?: EditMode.Fill
+                                            val editMode = mainActivity?.binding?.appBarMain?.fabLeft?.tag as? EditMode
+                                                    ?: EditMode.Fill
                                             when (editMode) {
                                                 EditMode.Fill -> Cell.State.Fill
                                                 else -> Cell.State.MarkNotFill
                                             }
                                         }
-                                        else -> state
                                     }
                             )
                         }
@@ -292,21 +295,22 @@ class SolveFragment: RxFragment(), Pikkel by PikkelDelegate() {
     }
 
     private fun getMode(): TouchMode? =
-            mainActivity()?.binding?.appBarMain?.fabRight?.tag as? TouchMode
+            mainActivity?.binding?.appBarMain?.fabRight?.tag as? TouchMode
 
     private fun initCanvas(savedInstanceState: Bundle?) {
         this.problem?.let {
             savedInstanceState?.let { bundle ->
                 ui(jobList) {
                     val bitmap = async {
-                        val cells = bundle.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) } ?: it.catalog.cells
+                        val cells = bundle.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) }
+                                ?: it.catalog.cells
                         algorithm.prevCells.apply {
                             clear()
                             addAll(cells)
                         }
 
                         this@SolveFragment.algorithm.setCells(cells)
-                    }.await()
+                    }?.await()
                     binding.canvas.setImageBitmap(bitmap)
                 }
             } ?: run {
@@ -316,4 +320,6 @@ class SolveFragment: RxFragment(), Pikkel by PikkelDelegate() {
             }
         } ?: run {}
     }
+
+    private val mainActivity get() = requireActivity() as? MainActivity
 }

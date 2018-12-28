@@ -1,25 +1,25 @@
 package jp.co.seesaa.geckour.picrossmaker.presentation.fragment
 
-import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.design.widget.AppBarLayout
 import android.support.design.widget.Snackbar
+import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.PopupMenu
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.*
-import com.trello.rxlifecycle2.components.RxFragment
 import jp.co.seesaa.geckour.picrossmaker.R
-import jp.co.seesaa.geckour.picrossmaker.presentation.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentProblemsBinding
-import jp.co.seesaa.geckour.picrossmaker.presentation.fragment.adapter.ProblemsListAdapter
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
 import jp.co.seesaa.geckour.picrossmaker.model.Problem
-import jp.co.seesaa.geckour.picrossmaker.util.*
+import jp.co.seesaa.geckour.picrossmaker.presentation.activity.MainActivity
+import jp.co.seesaa.geckour.picrossmaker.presentation.fragment.adapter.ProblemsListAdapter
+import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
+import jp.co.seesaa.geckour.picrossmaker.util.async
+import jp.co.seesaa.geckour.picrossmaker.util.showSnackbar
+import jp.co.seesaa.geckour.picrossmaker.util.ui
 import kotlinx.coroutines.experimental.Job
 
-class DraftProblemsFragment: RxFragment() {
+class DraftProblemsFragment : Fragment() {
 
     companion object {
         val TAG: String = DraftProblemsFragment::class.java.simpleName
@@ -37,15 +37,13 @@ class DraftProblemsFragment: RxFragment() {
         setHasOptionsMenu(true)
     }
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_problems, container, false)
-        return binding.root
-    }
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+            FragmentProblemsBinding.inflate(layoutInflater, container, false).apply { binding = this }.root
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        mainActivity()?.apply {
+        mainActivity?.apply {
             toolbar.viewTreeObserver.apply {
                 removeOnDrawListener(onClearScrollFlags)
                 addOnGlobalLayoutListener(onSetScrollFlags)
@@ -55,7 +53,7 @@ class DraftProblemsFragment: RxFragment() {
         adapter = getAdapter()
         fetchDraftProblems()
 
-        mainActivity()?.binding?.appBarMain?.fabRight
+        mainActivity?.binding?.appBarMain?.fabRight
                 ?.apply {
                     setImageResource(R.drawable.ic_add_white_24px)
                     setOnClickListener {
@@ -66,7 +64,7 @@ class DraftProblemsFragment: RxFragment() {
                                 requestCode = requestCode,
                                 cancelable = true
                         )
-                        fragment.show((activity as MainActivity).fragmentManager, MyAlertDialogFragment.getTag(requestCode))
+                        fragment.show(mainActivity?.supportFragmentManager, MyAlertDialogFragment.getTag(requestCode))
                     }
                 }
 
@@ -87,7 +85,7 @@ class DraftProblemsFragment: RxFragment() {
     override fun onResume() {
         super.onResume()
 
-        mainActivity()?.apply {
+        mainActivity?.apply {
             actionBar?.setTitle(R.string.action_bar_title_draft)
             binding.appBarMain?.fabRight?.show()
         }
@@ -101,7 +99,7 @@ class DraftProblemsFragment: RxFragment() {
             clear()
         }
 
-        (mainActivity()?.toolbar?.layoutParams as? AppBarLayout.LayoutParams)?.scrollFlags = 0
+        (mainActivity?.toolbar?.layoutParams as? AppBarLayout.LayoutParams)?.scrollFlags = 0
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -124,7 +122,7 @@ class DraftProblemsFragment: RxFragment() {
 
     private fun getAdapter(): ProblemsListAdapter =
             ProblemsListAdapter(
-                    object: ProblemsListAdapter.IListener {
+                    object : ProblemsListAdapter.IListener {
                         override fun onClickProblemItem(view: View, position: Int, problem: Problem, hasOpt: Boolean) {
                             if (hasOpt) {
                                 PopupMenu(view.context, view).apply {
@@ -148,10 +146,10 @@ class DraftProblemsFragment: RxFragment() {
 
                             val fragment = EditorFragment.newInstance(Pair(EditorFragment.ArgKeys.PROBLEM_ID, problem.id))
                             if (fragment != null) {
-                                fragmentManager.beginTransaction()
-                                        .replace(R.id.container, fragment)
-                                        .addToBackStack(null)
-                                        .commit()
+                                mainActivity?.supportFragmentManager?.beginTransaction()
+                                        ?.replace(R.id.container, fragment)
+                                        ?.addToBackStack(null)
+                                        ?.commit()
                             }
                         }
 
@@ -164,10 +162,10 @@ class DraftProblemsFragment: RxFragment() {
                         fun onEdit(problem: Problem) {
                             val fragment = EditorFragment.newInstance(Pair(EditorFragment.ArgKeys.PROBLEM_ID, problem.id))
                             if (fragment != null) {
-                                fragmentManager.beginTransaction()
-                                        .replace(R.id.container, fragment)
-                                        .addToBackStack(null)
-                                        .commit()
+                                mainActivity?.supportFragmentManager?.beginTransaction()
+                                        ?.replace(R.id.container, fragment)
+                                        ?.addToBackStack(null)
+                                        ?.commit()
                             }
                         }
 
@@ -180,43 +178,44 @@ class DraftProblemsFragment: RxFragment() {
                         }
 
                         fun tryToDelete(position: Int, problem: Problem) {
-                            mainActivity()?.binding?.appBarMain?.contentMain?.container?.apply {
-                                ui(jobList, { showSnackbar(this, R.string.problem_fragment_error_failure_delete) }) {
-                                    if (problem.id > -1) execDelete(problem.id, position, this@apply)
+                            mainActivity?.binding?.appBarMain?.contentMain?.container?.apply {
+                                if (problem.id > -1) execDelete(problem.id, position, this@apply)
+                            }
+                        }
+
+                        fun execDelete(id: Long, adapterPosition: Int, rootView: View) {
+                            async(onError = { onExecDelete(-1, id, null, adapterPosition, rootView) }) {
+                                OrmaProvider.db.selectFromProblem().idEq(id).firstOrNull()?.let { target ->
+                                    val deleteCount = OrmaProvider.db.deleteFromProblem().idEq(id).execute()
+                                    onExecDelete(deleteCount, id, target, adapterPosition, rootView)
                                 }
                             }
                         }
 
-                        suspend fun execDelete(id: Long, adapterPosition: Int, rootView: View) {
-                            async { OrmaProvider.db.selectFromProblem().idEq(id).firstOrNull() }.await()?.let { target ->
-                                val deleteCount = async { OrmaProvider.db.deleteFromProblem().idEq(id).execute() }.await()
-                                onExecDelete(deleteCount, id, target, adapterPosition, rootView)
-                            }
-                        }
-
-                        fun onExecDelete(count: Int, id: Long, target: Problem, adapterPosition: Int, rootView: View) {
-                            if (count > 0) {
+                        fun onExecDelete(count: Int, id: Long, target: Problem?, adapterPosition: Int, rootView: View) {
+                            if (count > 0 && target != null) {
                                 adapter.removeProblemsByIndex(adapterPosition)
                                 showSnackbar(rootView, R.string.problem_fragment_message_complete_delete, R.string.action_undo, Snackbar.LENGTH_LONG) {
                                     ui(jobList) {
-                                        async {
-                                            OrmaProvider.db.selectFromProblem().idEq(id).lastOrNull() ?: apply {
-                                                OrmaProvider.db.insertIntoProblem(target)
-                                            }
-                                        }.await()
+                                        OrmaProvider.db.selectFromProblem().idEq(id).lastOrNull()
+                                                ?: apply {
+                                                    OrmaProvider.db.insertIntoProblem(target)
+                                                }
                                         adapter.insertProblem(adapterPosition, target)
                                         showSnackbar(rootView, R.string.problem_fragment_message_undo)
                                     }
                                 }
-                            } else showSnackbar(activity.findViewById(R.id.container), R.string.problem_fragment_error_failure_delete)
+                            } else showSnackbar(requireActivity().findViewById(R.id.container), R.string.problem_fragment_error_failure_delete)
                         }
                     }, false)
 
     private fun fetchDraftProblems() {
-        ui(jobList) {
-            async { adapter.clearProblems() }.await()
-            val draftProblems = async { OrmaProvider.db.selectFromProblem().draftEq(true).orderBy("editedAt").toList() }.await()
-            adapter.addProblems(draftProblems)
+        async {
+            adapter.clearProblems()
+            val draftProblems = async { OrmaProvider.db.selectFromProblem().draftEq(true).orderBy("editedAt").toList() }?.await()
+            if (draftProblems != null) adapter.addProblems(draftProblems)
         }
     }
+
+    private val mainActivity get() = requireActivity() as? MainActivity
 }

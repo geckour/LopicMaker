@@ -2,44 +2,29 @@ package jp.co.seesaa.geckour.picrossmaker.presentation.fragment
 
 import android.content.Context
 import android.content.DialogInterface
-import android.databinding.DataBindingUtil
 import android.graphics.Color
 import android.graphics.Point
 import android.graphics.PointF
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
+import android.support.v4.app.Fragment
 import android.util.Size
 import android.view.*
-import com.github.yamamotoj.pikkel.Pikkel
-import com.github.yamamotoj.pikkel.PikkelDelegate
-import com.trello.rxlifecycle2.components.RxFragment
-import jp.co.seesaa.geckour.picrossmaker.*
-import jp.co.seesaa.geckour.picrossmaker.presentation.activity.MainActivity
+import jp.co.seesaa.geckour.picrossmaker.App
+import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.FragmentEditorBinding
 import jp.co.seesaa.geckour.picrossmaker.model.Cell
 import jp.co.seesaa.geckour.picrossmaker.model.OrmaProvider
 import jp.co.seesaa.geckour.picrossmaker.model.Problem
+import jp.co.seesaa.geckour.picrossmaker.presentation.activity.MainActivity
 import jp.co.seesaa.geckour.picrossmaker.util.*
 import kotlinx.coroutines.experimental.Job
-import org.sat4j.specs.TimeoutException
 import timber.log.Timber
 import java.sql.Timestamp
-import kotlin.collections.ArrayList
+import java.util.concurrent.TimeoutException
 
-class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by PikkelDelegate() {
-    private var listener: IListener? = null
-    private val size by state(Point(0, 0))
-    private var problemId by state(-1L)
-    private var problem: Problem? = null
-    private var draft by state(true)
-    private lateinit var binding: FragmentEditorBinding
-    private val pointPrev0 = PointF(-1f, -1f)
-    private val pointPrev1 = PointF(-1f, -1f)
-    private var satisfactionState by state(Algorithm.SatisfactionState.Unsatisfiable)
-    private val algorithm: Algorithm by lazy { Algorithm(size) }
-    private val jobList: ArrayList<Job> = ArrayList()
-    private var menu: Menu? = null
+class EditorFragment : Fragment(), MyAlertDialogFragment.IListener {
 
     interface IListener {
         fun onCanvasSizeError(size: Size)
@@ -87,37 +72,48 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
         val TAG: String = this::class.java.simpleName
     }
 
+    private var listener: IListener? = null
+    private val size = Point(0, 0)
+    private var problemId = -1L
+    private var problem: Problem? = null
+    private var draft = true
+    private lateinit var binding: FragmentEditorBinding
+    private val pointPrev0 = PointF(-1f, -1f)
+    private val pointPrev1 = PointF(-1f, -1f)
+    private var satisfactionState = Algorithm.SatisfactionState.Unsatisfiable
+    private val algorithm: Algorithm by lazy { Algorithm(size) }
+    private val jobList: ArrayList<Job> = ArrayList()
+    private var menu: Menu? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setHasOptionsMenu(true)
 
-        this.problemId = if (arguments.containsKey(ArgKeys.PROBLEM_ID.name)) arguments.getLong(ArgKeys.PROBLEM_ID.name, -1) else -1
+        this.problemId = arguments?.let { if (it.containsKey(ArgKeys.PROBLEM_ID.name)) it.getLong(ArgKeys.PROBLEM_ID.name, -1) else -1 } ?: -1
 
-        this.draft = if (arguments.containsKey(ArgKeys.DRAFT.name)) arguments.getBoolean(ArgKeys.DRAFT.name, true) else true
+        this.draft = arguments?.let { if (it.containsKey(ArgKeys.DRAFT.name)) it.getBoolean(ArgKeys.DRAFT.name, true) else true } ?: true
     }
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_editor, container, false)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+            FragmentEditorBinding.inflate(layoutInflater, container, false).apply { binding = this }.root
 
-        return binding.root
-    }
-
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        if (!arguments.containsKey(ArgKeys.CANVAS_SIZE.name) && problemId > -1) {
+        if (arguments?.containsKey(ArgKeys.CANVAS_SIZE.name)?.not() != false && problemId > -1) {
             ui(jobList) {
-                this@EditorFragment.problem = async { OrmaProvider.db.selectFromProblem().idEq(problemId).valueOrNull() }.await()
+                this@EditorFragment.problem = async { OrmaProvider.db.selectFromProblem().idEq(problemId).valueOrNull() }?.await()
                 this@EditorFragment.problem?.apply {
                     size.set(this.keysHorizontal.keys.size, this.keysVertical.keys.size)
                     (activity as? MainActivity)?.supportActionBar?.title = getString(R.string.action_bar_title_edit_with_title, title)
-                } ?: run { (activity as? MainActivity)?.supportActionBar?.setTitle(R.string.action_bar_title_edit) }
+                }
+                        ?: run { (activity as? MainActivity)?.supportActionBar?.setTitle(R.string.action_bar_title_edit) }
 
                 initCanvas(savedInstanceState)
             }
         } else {
-            arguments.getSize(ArgKeys.CANVAS_SIZE.name).apply { size.set(this.width, this.height) }
+            arguments?.getSize(ArgKeys.CANVAS_SIZE.name)?.apply { size.set(this.width, this.height) }
 
             initCanvas(savedInstanceState)
         }
@@ -141,8 +137,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                         if (event.pointerCount > 1) {
                             val p1 = PointF(event.getX(1), event.getY(1))
                             onScale(p0, p1)
-                        }
-                        else onDrag(p0)
+                        } else onDrag(p0)
                     }
                 }
             } else false
@@ -158,7 +153,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
     override fun onResume() {
         super.onResume()
 
-        mainActivity()?.binding?.appBarMain?.fabRight?.apply {
+        mainActivity?.binding?.appBarMain?.fabRight?.apply {
             tag = Mode.Edit
             setImageResource(R.drawable.ic_crop_free_white_24px)
             setOnClickListener {
@@ -184,7 +179,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
             forEach { it.cancel() }
             clear()
         }
-        mainActivity()?.binding?.appBarMain?.fabLeft?.hide()
+        mainActivity?.binding?.appBarMain?.fabLeft?.hide()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -217,10 +212,9 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
         }
     }
 
-    override fun onSaveInstanceState(outState: Bundle?) {
+    override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState?.putStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS, ArrayList(algorithm.cells.map { App.gson.toJson(it) }))
-        saveInstanceState(outState)
+        outState.putStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS, ArrayList(algorithm.cells.map { App.gson.toJson(it) }))
     }
 
     override fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: MyAlertDialogFragment.RequestCode, resultCode: Int, result: Any?) {
@@ -241,69 +235,74 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
             MyAlertDialogFragment.RequestCode.SAVE_PROBLEM -> {
                 (result as? String)?.let {
                     if (it.isNotEmpty()) {
-                        ui(jobList, { showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_failure_save) }) {
-                            Timber.d("result: $it")
-                            createProblem(it, false)?.apply {
-                                async { OrmaProvider.db.insertIntoProblem(this@apply) }.await()
-                                showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
+                        Timber.d("result: $it")
+                        createProblem(it, false)?.apply {
+                            ui(jobList, { showSnackbar(requireActivity().findViewById(R.id.container), R.string.editor_fragment_error_failure_save) }) {
+                                OrmaProvider.db.insertIntoProblem(this@apply)
+                                showSnackbar(requireActivity().findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
                             }
                         }
                     } else null
-                } ?: showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_invalid_title)
+                }
+                        ?: showSnackbar(requireActivity().findViewById(R.id.container), R.string.editor_fragment_error_invalid_title)
             }
 
             // 下書きを保存
             MyAlertDialogFragment.RequestCode.SAVE_DRAFT_PROBLEM -> {
                 (result as? String)?.let {
                     if (it.isNotEmpty()) {
-                        ui(jobList, { showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_failure_save) }) {
+                        ui(jobList, { showSnackbar(requireActivity().findViewById(R.id.container), R.string.editor_fragment_error_failure_save) }) {
                             createProblem(it, true)?.apply {
-                                async { OrmaProvider.db.insertIntoProblem(this@apply) }.await()
-                                showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
+                                async { OrmaProvider.db.insertIntoProblem(this@apply) }
+                                showSnackbar(requireActivity().findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
                             }
                         }
                     } else null
-                } ?: showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_invalid_title)
+                }
+                        ?: showSnackbar(requireActivity().findViewById(R.id.container), R.string.editor_fragment_error_invalid_title)
             }
 
             // 上書きして問題 / 下書きを保存
             MyAlertDialogFragment.RequestCode.CONFIRM_BEFORE_SAVE -> {
                 (result as? String)?.let {
                     if (it.isNotEmpty()) {
-                        ui(jobList, { showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_failure_save) }) {
-                            val specifyData: MyAlertDialogFragment.ProblemSpecifyData? =
-                                    try { App.gson.fromJson(it) }
-                                    catch (e: Exception) {
-                                        Timber.e(e)
-                                        null
-                                    }
-                            this@EditorFragment.problem?.apply {
-                                draft = satisfactionState != Algorithm.SatisfactionState.Satisfiable
-                                editedAt = Timestamp(System.currentTimeMillis())
-                                specifyData?.let {
-                                    title = it.title
-                                    tags = it.tags
+                        val metadata: MyAlertDialogFragment.ProblemMetadata? =
+                                try {
+                                    App.gson.fromJson(it)
+                                } catch (e: Exception) {
+                                    Timber.e(e)
+                                    null
                                 }
-
-                                async { OrmaProvider.db.relationOfProblem().upsert(this@apply) }.await()
-                                showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
+                        this@EditorFragment.problem?.apply {
+                            draft = satisfactionState != Algorithm.SatisfactionState.Satisfiable
+                            editedAt = Timestamp(System.currentTimeMillis())
+                            metadata?.let {
+                                title = it.title
+                                tags = it.tags
+                            }
+                            ui(jobList, { showSnackbar(requireActivity().findViewById(R.id.container), R.string.editor_fragment_error_failure_save) }) {
+                                OrmaProvider.db.relationOfProblem().upsert(this@apply)
+                                showSnackbar(requireActivity().findViewById(R.id.container), R.string.editor_fragment_message_complete_save)
                             }
                         }
                     } else null
-                } ?: showSnackbar(activity.findViewById(R.id.container), R.string.editor_fragment_error_invalid_title)
+                }
+                        ?: showSnackbar(requireActivity().findViewById(R.id.container), R.string.editor_fragment_error_invalid_title)
             }
 
-            else -> {}
+            else -> {
+            }
         }
     }
 
     private fun onNeutral(requestCode: MyAlertDialogFragment.RequestCode, result: Any?) =
             when (requestCode) {
                 MyAlertDialogFragment.RequestCode.CONFIRM_BEFORE_SAVE -> onSaveCanvas(result as String?, false)
-                else -> {}
+                else -> {
+                }
             }
 
-    private fun onScale (pointCurrent0: PointF, pointCurrent1: PointF): Boolean {
+    private fun onScale(pointCurrent0: PointF, pointCurrent1: PointF): Boolean {
         if (pointPrev0.x < 0f) pointPrev0.set(pointCurrent0)
         if (pointPrev1.x < 0f) pointPrev1.set(pointCurrent1)
         val scale = algorithm.getScale(algorithm.getPointDiff(pointPrev0, pointPrev1).length(), algorithm.getPointDiff(pointCurrent0, pointCurrent1).length())
@@ -393,14 +392,15 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
     }
 
     private fun getMode(): Mode? =
-            mainActivity()?.binding?.appBarMain?.fabRight?.tag as? Mode
+            mainActivity?.binding?.appBarMain?.fabRight?.tag as? Mode
 
     private fun initCanvas(savedInstanceState: Bundle?) {
         if (this.problemId > -1) {
             ui(jobList) {
                 val bitmap = async {
                     this@EditorFragment.problem?.let {
-                        val cells = savedInstanceState?.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) } ?: it.catalog.cells
+                        val cells = savedInstanceState?.getStringArrayList(CanvasUtil.BUNDLE_NAME_CELLS)?.map { App.gson.fromJson(it, Cell::class.java) }
+                                ?: it.catalog.cells
                         algorithm.prevCells.apply {
                             clear()
                             addAll(cells)
@@ -408,7 +408,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
 
                         this@EditorFragment.algorithm.setCells(cells)
                     }
-                }.await()
+                }?.await()
                 binding.canvas.setImageBitmap(bitmap)
             }
         } else binding.canvas.setImageBitmap(algorithm.createCanvasImage())
@@ -425,9 +425,8 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                     }
                 }
         ui(jobList) {
-            val inheritOptional = async { OrmaProvider.db.selectFromProblem().idEq(problemId).valueOrNull() }.await()?.let {
-                App.gson.toJson(MyAlertDialogFragment.ProblemSpecifyData(it.title, it.tags))
-            }
+            val inheritOptional = OrmaProvider.db.selectFromProblem().idEq(problemId).valueOrNull()
+            App.gson.toJson(MyAlertDialogFragment.ProblemMetadata(inheritOptional.title, inheritOptional.tags))
             showDialog(requireOverwrite, inheritOptional ?: optional, requestCode)
         }
     }
@@ -457,15 +456,16 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                 targetFragment = this
         )
 
-        (activity as? MainActivity)?.let {
-            fragment.show(it.fragmentManager, MyAlertDialogFragment.getTag(requestCode))
+        mainActivity?.let {
+            fragment.show(it.supportFragmentManager, MyAlertDialogFragment.getTag(requestCode))
         }
     }
 
     private fun createProblem(data: String, draft: Boolean = this.draft, id: Long = -1L): Problem? {
-        val specifyData: MyAlertDialogFragment.ProblemSpecifyData =
-                try { App.gson.fromJson(data) }
-                catch (e: Exception) {
+        val metadata: MyAlertDialogFragment.ProblemMetadata =
+                try {
+                    App.gson.fromJson(data)
+                } catch (e: Exception) {
                     Timber.e(e)
                     return null
                 }
@@ -482,9 +482,9 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
 
         return Problem(
                 id,
-                specifyData.title,
+                metadata.title,
                 draft,
-                specifyData.tags,
+                metadata.tags,
                 Problem.KeysCluster(*(keysInRow.toTypedArray())),
                 Problem.KeysCluster(*(keysInColumn.toTypedArray())),
                 thumb,
@@ -494,7 +494,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
 
     private fun showUndoButtonIfAvailable() {
         if (algorithm.prevCells.isNotEmpty()) {
-            mainActivity()?.binding?.appBarMain?.fabLeft?.apply {
+            mainActivity?.binding?.appBarMain?.fabLeft?.apply {
                 setImageResource(R.drawable.ic_undo_black_24px)
                 setOnClickListener {
                     val bitmap = algorithm.setCells(algorithm.prevCells)
@@ -512,9 +512,15 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
             ui(jobList) {
                 satisfactionState = algorithm.getSolutionCounter()?.let {
                     val count =
-                            try { async { it.countSolutions() }.await() }
-                            catch (e: TimeoutException) { it.lowerBound() }
-                            finally { -1L }
+                            async {
+                                try {
+                                    it.countSolutions()
+                                } catch (e: TimeoutException) {
+                                    it.lowerBound()
+                                } finally {
+                                    -1
+                                }
+                            }?.await() ?: -1
 
                     algorithm.getSatisfactionState(count)
                 } ?: let {
@@ -522,7 +528,7 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
                     Algorithm.SatisfactionState.Unsatisfiable
                 }
                 findItem(R.id.action_save)?.apply {
-                    icon = activity.getDrawable(
+                    icon = requireActivity().getDrawable(
                             if (satisfactionState == Algorithm.SatisfactionState.Satisfiable) R.drawable.ic_save_white_24px
                             else R.drawable.ic_bookmark_black_24px
                     ).apply {
@@ -532,4 +538,6 @@ class EditorFragment: RxFragment(), MyAlertDialogFragment.IListener, Pikkel by P
             }
         } ?: Timber.d("this.menu is null")
     }
+
+    private val mainActivity get() = requireActivity() as? MainActivity
 }

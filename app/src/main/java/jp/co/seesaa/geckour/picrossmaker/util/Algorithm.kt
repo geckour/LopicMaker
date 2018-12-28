@@ -9,8 +9,6 @@ import org.sat4j.specs.ISolver
 import kotlin.collections.ArrayList
 
 class Algorithm: CanvasUtil {
-    private var keysHorizontal: List<List<Int>> = listOf()
-    private var keysVertical: List<List<Int>> = listOf()
 
     constructor(size: Point): super(size)
     constructor(keysHorizontal: List<List<Int>>, keysVertical: List<List<Int>>): super(Point(keysHorizontal.size, keysVertical.size)) {
@@ -24,6 +22,8 @@ class Algorithm: CanvasUtil {
         Unsatisfiable
     }
 
+    private var keysHorizontal: List<List<Int>> = listOf()
+    private var keysVertical: List<List<Int>> = listOf()
     private val solver: ISolver = SolverFactory.newDefault().apply { timeoutMs = 500 }
 
     fun getSatisfactionState(solutionCount: Long) =

@@ -63,8 +63,8 @@ class ProblemsListAdapter(
         else listener.onAllUnbind()
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
-        val binding: ItemProblemBinding = DataBindingUtil.inflate(LayoutInflater.from(parent?.context), R.layout.item_problem, parent, false)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val binding: ItemProblemBinding = DataBindingUtil.inflate(LayoutInflater.from(parent.context), R.layout.item_problem, parent, false)
 
         return ViewHolder(binding)
     }

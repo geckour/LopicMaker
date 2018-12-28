@@ -19,7 +19,7 @@ open class CanvasUtil(val size: Point) {
     }
 
     companion object {
-        val BUNDLE_NAME_CELLS = "cells"
+        const val BUNDLE_NAME_CELLS = "cells"
     }
 
     private fun initCells() {
@@ -226,7 +226,7 @@ open class CanvasUtil(val size: Point) {
         return bitmap
     }
 
-    fun refreshKeys(image: Bitmap, cell: Cell): Bitmap {
+    private fun refreshKeys(image: Bitmap, cell: Cell): Bitmap {
         val row = getCellsInRow(cell.coordinate.y) ?: return image
         val column = getCellsInColumn(cell.coordinate.x) ?: return image
         val keysRow = getKeys(row)

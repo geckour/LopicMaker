@@ -6,32 +6,34 @@ import android.os.Bundle
 import android.support.design.widget.AppBarLayout
 import android.support.design.widget.NavigationView
 import android.support.v7.app.ActionBarDrawerToggle
+import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
-import com.trello.rxlifecycle2.components.support.RxAppCompatActivity
-import jp.co.seesaa.geckour.picrossmaker.presentation.fragment.ProblemsFragment
 import jp.co.seesaa.geckour.picrossmaker.R
 import jp.co.seesaa.geckour.picrossmaker.databinding.ActivityMainBinding
 import jp.co.seesaa.geckour.picrossmaker.presentation.fragment.DraftProblemsFragment
 import jp.co.seesaa.geckour.picrossmaker.presentation.fragment.EditorFragment
+import jp.co.seesaa.geckour.picrossmaker.presentation.fragment.ProblemsFragment
 import jp.co.seesaa.geckour.picrossmaker.presentation.fragment.SearchFragment
 import jp.co.seesaa.geckour.picrossmaker.util.MyAlertDialogFragment
 import jp.co.seesaa.geckour.picrossmaker.util.showSnackbar
 
-class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, EditorFragment.IListener, MyAlertDialogFragment.IListener {
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, EditorFragment.IListener, MyAlertDialogFragment.IListener {
 
     lateinit var binding: ActivityMainBinding
     lateinit var toolbar: Toolbar
-    lateinit var drawerToggle: ActionBarDrawerToggle
+    private lateinit var drawerToggle: ActionBarDrawerToggle
     val onClearScrollFlags by lazy { { (toolbar.layoutParams as AppBarLayout.LayoutParams).scrollFlags = 0 } }
-    val onSetScrollFlags by lazy { {
-        (toolbar.layoutParams as AppBarLayout.LayoutParams).scrollFlags =
-                AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS
-    } }
+    val onSetScrollFlags by lazy {
+        {
+            (toolbar.layoutParams as AppBarLayout.LayoutParams).scrollFlags =
+                    AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,7 +60,7 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
 
         if (savedInstanceState == null) {
             val fragment = ProblemsFragment.newInstance()
-            fragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+            supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
         }
     }
 
@@ -88,12 +90,12 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
         when (id) {
             R.id.nav_problem -> {
                 val fragment = ProblemsFragment.newInstance()
-                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(ProblemsFragment.TAG).commit()
+                supportFragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(ProblemsFragment.TAG).commit()
             }
 
             R.id.nav_draft -> {
                 val fragment = DraftProblemsFragment.newInstance()
-                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(DraftProblemsFragment.TAG).commit()
+                supportFragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(DraftProblemsFragment.TAG).commit()
             }
 
             R.id.nav_editor -> {
@@ -104,14 +106,15 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
                         requestCode = requestCode,
                         cancelable = true
                 )
-                fragment.show(fragmentManager, MyAlertDialogFragment.getTag(requestCode))
+                fragment.show(supportFragmentManager, MyAlertDialogFragment.getTag(requestCode))
             }
 
-            R.id.nav_setting -> {}
+            R.id.nav_setting -> {
+            }
 
             R.id.nav_search -> {
                 val fragment = SearchFragment.createInstance()
-                fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(SearchFragment.tag).commit()
+                supportFragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(SearchFragment.tag).commit()
             }
         }
 
@@ -135,10 +138,11 @@ class MainActivity : RxAppCompatActivity(), NavigationView.OnNavigationItemSelec
             MyAlertDialogFragment.RequestCode.DEFINE_SIZE -> {
                 (result as? Size)?.let {
                     val fragment = EditorFragment.newInstance(it, this@MainActivity)
-                    if (fragment != null) fragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(EditorFragment.TAG).commit()
+                    if (fragment != null) supportFragmentManager.beginTransaction().replace(R.id.container, fragment).addToBackStack(EditorFragment.TAG).commit()
                 }
             }
-            else -> {}
+            else -> {
+            }
         }
     }
 }

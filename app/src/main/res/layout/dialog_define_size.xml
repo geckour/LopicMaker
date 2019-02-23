@@ -3,14 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <android.support.constraint.ConstraintLayout android:layout_width="match_parent"
+    <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="match_parent"
         android:layout_height="match_parent">
 
         <TextView
             android:text="@string/dialog_alert_width_size_define"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/text_size_width"
+            android:id="@+id/text_title"
             app:layout_constraintTop_toTopOf="@+id/edit_text_size_width"
             app:layout_constraintBottom_toBottomOf="@+id/edit_text_size_width"
             android:layout_marginStart="16dp"
@@ -38,8 +38,8 @@
             android:id="@+id/text_size_height"
             app:layout_constraintBottom_toBottomOf="@+id/edit_text_size_height"
             app:layout_constraintTop_toTopOf="@+id/edit_text_size_height"
-            app:layout_constraintRight_toRightOf="@+id/text_size_width"
-            app:layout_constraintLeft_toLeftOf="@+id/text_size_width" />
+            app:layout_constraintRight_toRightOf="@+id/text_title"
+            app:layout_constraintLeft_toLeftOf="@+id/text_title" />
 
         <EditText
             android:layout_width="wrap_content"
@@ -53,5 +53,5 @@
             app:layout_constraintLeft_toLeftOf="@+id/edit_text_size_width"
             android:hint="@string/dialog_alert_hint_size_define"
             android:textAlignment="textEnd" />
-    </android.support.constraint.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

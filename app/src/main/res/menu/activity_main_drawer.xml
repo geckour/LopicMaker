@@ -1,32 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <group android:checkableBehavior="single">
-        <item
-            android:id="@+id/nav_problem"
-            android:icon="@drawable/ic_menu_camera"
-            android:title="@string/nav_problem" />
-        <item
-            android:id="@+id/nav_draft"
-            android:icon="@drawable/ic_menu_gallery"
-            android:title="@string/nav_draft" />
-        <item
-            android:id="@+id/nav_editor"
-            android:icon="@drawable/ic_menu_slideshow"
-            android:title="@string/nav_editor" />
-        <item
-            android:id="@+id/nav_setting"
-            android:icon="@drawable/ic_menu_manage"
-            android:title="@string/nav_setting" />
-    </group>
-
-    <item android:title="@string/nav_other">
+    <item android:title="@string/nav_main">
         <menu>
-            <item
-                android:id="@+id/nav_share"
-                android:icon="@drawable/ic_menu_share"
-                android:title="@string/nav_share" />
+            <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/nav_problem"
+                    android:icon="@drawable/ic_check_circle"
+                    android:title="@string/nav_problem" />
+
+                <item
+                    android:id="@+id/nav_draft"
+                    android:icon="@drawable/ic_draft"
+                    android:title="@string/nav_draft" />
+
+                <item
+                    android:id="@+id/nav_editor"
+                    android:icon="@drawable/ic_add"
+                    android:title="@string/nav_editor" />
+            </group>
         </menu>
     </item>
 
+    <item android:title="@string/nav_other">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/nav_search"
+                    android:icon="@drawable/ic_search"
+                    android:title="@string/nav_search" />
+
+                <item
+                    android:id="@+id/nav_setting"
+                    android:icon="@drawable/ic_settings"
+                    android:title="@string/nav_setting" />
+            </group>
+        </menu>
+    </item>
 </menu>

@@ -1,28 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <RelativeLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
         <TextView
-            android:text="TextView"
+            android:id="@+id/text_indicate_empty"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/text_indicate_empty"
-            tools:text="@string/problem_fragment_message_empty"
-            android:layout_centerInParent="true" />
+            android:layout_centerInParent="true"
+            android:text="@string/problem_fragment_message_empty_draft"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-        <android.support.v4.widget.SwipeRefreshLayout
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:id="@+id/swipe_refresh">
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipe_refresh"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-            <android.support.v7.widget.RecyclerView
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                tools:listitem="@layout/item_problem"
-                android:id="@+id/recyclerView" />
-        </android.support.v4.widget.SwipeRefreshLayout>
-    </RelativeLayout>
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingBottom="64dp"
+                tools:listitem="@layout/item_problem" />
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

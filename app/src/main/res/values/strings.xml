@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Picross Maker</string>
-    <string name="app_description">make your original Picross</string>
+    <string name="app_name" translatable="false">Lopic Maker</string>
+    <string name="app_description" translatable="false">make your original Lopic</string>
 
     <string name="action_bar_title_main">作成済みの問題</string>
     <string name="action_bar_title_draft">下書き</string>
@@ -45,7 +45,9 @@
     <string name="dialog_alert_title_save_draft_problem">下書きを保存</string>
     <string name="dialog_alert_title_overwrite">上書き保存</string>
     <string name="dialog_alert_message_save_problem">問題を保存しますか？</string>
-    <string name="dialog_alert_message_save_draft_problem_exist_multiple_solution">この問題のヒントキーからは複数の解が導かれます。下書きとして保存しますか？</string>
+    <string name="dialog_alert_message_save_draft_problem_exist_multiple_solution">
+        この問題のヒントキーからは複数の解が導かれます。下書きとして保存しますか？
+    </string>
     <string name="dialog_alert_message_save_draft_problem_unsatisfiable">この問題は解くことができません。下書きとして保存しますか？</string>
     <string name="dialog_alert_message_confirm_before_save">上書き保存しますか？\n新しい問題 / 下書きとして保存しますか？</string>
     <string name="dialog_alert_message_import">この問題をローカルに保存しますか？</string>

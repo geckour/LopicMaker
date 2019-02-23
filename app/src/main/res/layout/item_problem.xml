@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:tools="http://schemas.android.com/tools"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <android.support.constraint.ConstraintLayout
+    <data>
+
+        <variable
+            name="data"
+            type="com.geckour.lopicmaker.data.model.Problem" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?android:attr/selectableItemBackground"
@@ -17,13 +24,14 @@
             android:tint="@color/colorBackgroundDark"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_help_outline_black_24px" />
+            app:srcBitmap="@{data.thumb}" />
 
         <TextView
             android:id="@+id/size"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
+            android:text="@{String.format(@string/problem_fragment_item_point, data.keysVertical.size(), data.keysHorizontal.size())}"
             android:textSize="12sp"
             app:layout_constraintBottom_toBottomOf="@id/title"
             app:layout_constraintStart_toEndOf="@+id/thumb"
@@ -34,6 +42,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
+            android:text="@{data.title}"
             android:textSize="16sp"
             app:layout_constraintLeft_toRightOf="@+id/size"
             app:layout_constraintTop_toTopOf="@+id/thumb"
@@ -47,7 +56,8 @@
             android:textSize="12sp"
             app:layout_constraintStart_toStartOf="@id/size"
             app:layout_constraintTop_toBottomOf="@+id/title"
+            app:tagList="@{data.tags}"
             tools:text="タグ: animal, cat" />
 
-    </android.support.constraint.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

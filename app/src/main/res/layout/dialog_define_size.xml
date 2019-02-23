@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <android.support.constraint.ConstraintLayout android:layout_width="match_parent"
+    <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="match_parent"
         android:layout_height="match_parent">
 
         <TextView
@@ -53,5 +53,5 @@
             app:layout_constraintLeft_toLeftOf="@+id/edit_text_size_width"
             android:hint="@string/dialog_alert_hint_size_define"
             android:textAlignment="textEnd" />
-    </android.support.constraint.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

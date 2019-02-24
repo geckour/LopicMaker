@@ -2,85 +2,67 @@
     <string name="app_name" translatable="false">Lopic Maker</string>
     <string name="app_description" translatable="false">make your original Lopic</string>
 
-    <string name="action_bar_title_main">作成済みの問題</string>
-    <string name="action_bar_title_draft">下書き</string>
-    <string name="action_bar_title_edit">編集</string>
-    <string name="action_bar_title_edit_with_title">編集 - %1$s</string>
-    <string name="action_bar_title_solve">求解</string>
-    <string name="action_bar_title_solve_with_title">求解 - %1$s</string>
+    <string name="action_bar_title_main">Created problems</string>
+    <string name="action_bar_title_draft">Drafts</string>
+    <string name="action_bar_title_edit">Edit</string>
+    <string name="action_bar_title_edit_with_title">Edit - %1$s</string>
+    <string name="action_bar_title_solve">Solve</string>
+    <string name="action_bar_title_solve_with_title">Solve - %1$s</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <string name="action_settings">Settings</string>
-    <string name="action_save">保存</string>
-    <string name="action_undo">取り消し</string>
+    <string name="action_save">Save</string>
+    <string name="action_undo">Undo</string>
 
-    <string name="nav_main">編集</string>
-    <string name="nav_problem">作成済みの問題</string>
-    <string name="nav_draft">下書き</string>
-    <string name="nav_editor">新規作成</string>
-    <string name="nav_setting">設定</string>
-    <string name="nav_other">その他</string>
-    <string name="nav_share">共有</string>
-    <string name="nav_search">検索</string>
+    <string name="nav_main">Edit</string>
+    <string name="nav_problem">Created problems</string>
+    <string name="nav_draft">Draft</string>
+    <string name="nav_editor">Make new problem</string>
 
-    <string name="button_search">検索</string>
+    <string name="hint_query_title">Input title…</string>
+    <string name="hint_query_genre">Input tags…</string>
 
-    <string name="hint_query_title">タイトルを入力…</string>
-    <string name="hint_query_genre">タグを入力…</string>
-
-    <string name="dialog_alert_width_size_define">横:</string>
-    <string name="dialog_alert_height_size_define">縦:</string>
+    <string name="dialog_alert_width_size_define">Width:</string>
+    <string name="dialog_alert_height_size_define">Height:</string>
     <string name="dialog_alert_hint_size_define">1 ~ 128</string>
-    <string name="dialog_alert_title_title_define">タイトル:</string>
-    <string name="dialog_alert_title_tags_define">タグ:</string>
-    <string name="dialog_alert_title_import">問題の取り込み</string>
-    <string name="dialog_alert_button_confirm">決定</string>
-    <string name="dialog_alert_button_cancel">キャンセル</string>
-    <string name="dialog_alert_button_overwrite">上書き</string>
-    <string name="dialog_alert_button_create_new">新規問題として保存</string>
-    <string name="dialog_alert_title_size_define">キャンバスのサイズ</string>
-    <string name="dialog_alert_title_save_problem">保存</string>
-    <string name="dialog_alert_title_save_draft_problem">下書きを保存</string>
-    <string name="dialog_alert_title_overwrite">上書き保存</string>
-    <string name="dialog_alert_message_save_problem">問題を保存しますか？</string>
+    <string name="dialog_alert_title_title_define">Title:</string>
+    <string name="dialog_alert_title_tags_define">Tags:</string>
+    <string name="dialog_alert_button_confirm">OK</string>
+    <string name="dialog_alert_button_cancel">Cancel</string>
+    <string name="dialog_alert_button_overwrite">Overwrite</string>
+    <string name="dialog_alert_button_create_new">Save as new problem</string>
+    <string name="dialog_alert_title_size_define">Size of canvas</string>
+    <string name="dialog_alert_title_save_problem">Save</string>
+    <string name="dialog_alert_title_save_draft_problem">Save as draft</string>
+    <string name="dialog_alert_title_overwrite">Save by overwrite</string>
+    <string name="dialog_alert_message_save_problem">Do you want to save the problem?</string>
     <string name="dialog_alert_message_save_draft_problem_exist_multiple_solution">
-        この問題のヒントキーからは複数の解が導かれます。下書きとして保存しますか？
+        Multiple solution can be led by this problem. Do you want to save the problem as draft?
     </string>
-    <string name="dialog_alert_message_save_draft_problem_unsatisfiable">この問題は解くことができません。下書きとして保存しますか？</string>
-    <string name="dialog_alert_message_confirm_before_save">上書き保存しますか？\n新しい問題 / 下書きとして保存しますか？</string>
-    <string name="dialog_alert_message_import">この問題をローカルに保存しますか？</string>
+    <string name="dialog_alert_message_save_draft_problem_unsatisfiable">This problem cannot be solved. Do you want to save the problem as draft?</string>
+    <string name="dialog_alert_message_confirm_before_save">Do you want to save the problem by overwrite?\nOr save as a new problem / draft?</string>
 
-    <string name="problem_fragment_message_empty">まだ問題が作成されていません。\n右下の+ボタンから作成してください</string>
-    <string name="problem_fragment_message_empty_draft">まだ下書きが作成されていません。\n右下の+ボタンから作成してください</string>
-    <string name="problem_fragment_message_empty_search">問題が見つかりませんでした。\n検索条件を変えて再度検索してみてください</string>
-    <string name="problem_fragment_error_invalid_size">有効なサイズを指定してください</string>
+    <string name="problem_fragment_message_empty">There is no problem created.\nCreate new problem from + button \non right bottom of screen.</string>
+    <string name="problem_fragment_message_empty_draft">There is no draft created.\nCreate new problem from + button \non right bottom of screen.</string>
+    <string name="problem_fragment_error_invalid_size">Please specify the valid size.</string>
     <string name="problem_fragment_item_point">%1$d x %2$d</string>
-    <string name="problem_fragment_error_failure_delete">削除に失敗しました</string>
-    <string name="problem_fragment_message_complete_delete">削除しました</string>
-    <string name="problem_fragment_message_undo">取り消しました</string>
-    <string name="problem_fragment_text_tag_prefix">タグ: %1$s</string>
-    <string name="problem_fragment_message_complete_import">問題を保存しました</string>
-    <string name="problem_fragment_message_failure_import">問題の保存に失敗しました</string>
+    <string name="problem_fragment_error_failure_delete">Failed to delete.</string>
+    <string name="problem_fragment_message_complete_delete">Deleted.</string>
+    <string name="problem_fragment_message_undo">Undid.</string>
+    <string name="problem_fragment_text_tag_prefix">Tags: %1$s</string>
 
-    <string name="editor_fragment_message_complete_save">保存しました</string>
-    <string name="editor_fragment_error_failure_save">保存に失敗しました</string>
-    <string name="editor_fragment_error_invalid_title">有効なタイトルを指定してください</string>
+    <string name="editor_fragment_message_complete_save">Saved.</string>
+    <string name="editor_fragment_error_failure_save">Failed to save.</string>
+    <string name="editor_fragment_error_invalid_title">Please specify the valid title.</string>
 
-    <string name="solve_fragment_message_solved">求解成功</string>
+    <string name="solve_fragment_message_solved">Solved.</string>
 
-    <string name="popup_item_title_register">この問題をサーバーに投稿</string>
-    <string name="popup_item_title_solve">この問題を解く</string>
-    <string name="popup_item_title_edit">この問題を編集</string>
-    <string name="popup_item_title_delete">この問題を削除</string>
+    <string name="popup_item_title_solve">Solve this problem</string>
+    <string name="popup_item_title_edit">Edit this problem</string>
+    <string name="popup_item_title_delete">Delete this problem</string>
 
-    <string name="accessibility_desc_drawer_open">ドロワーを開く</string>
-    <string name="accessibility_desc_drawer_close">ドロワーを閉じる</string>
-
-    <string name="api_message_accepted">問題を登録しました</string>
-    <string name="api_message_no_such_problem">問題が見つかりませんでした</string>
-    <string name="api_message_unsolvable">この問題は解くことができません</string>
-    <string name="api_message_invalid_request">問題の登録に失敗しました</string>
-    <string name="api_message_unknown_error">エラーが発生しました</string>
+    <string name="accessibility_desc_drawer_open">Open navigation drawer</string>
+    <string name="accessibility_desc_drawer_close">Close navigation drawer</string>
 </resources>

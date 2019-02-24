@@ -6,13 +6,13 @@ import android.util.Size
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.ActionBarDrawerToggle
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProviders
 import com.geckour.lopicmaker.R
 import com.geckour.lopicmaker.databinding.ActivityMainBinding
+import com.geckour.lopicmaker.ui.CrashlyticsEnabledActivity
 import com.geckour.lopicmaker.ui.main.draft.DraftProblemsFragment
 import com.geckour.lopicmaker.ui.main.edit.EditorFragment
 import com.geckour.lopicmaker.ui.main.problem.ProblemsFragment
@@ -22,8 +22,8 @@ import com.geckour.lopicmaker.util.observe
 import com.geckour.lopicmaker.util.showSnackbar
 
 class MainActivity :
-    AppCompatActivity(),
-    MyAlertDialogFragment.IListener {
+    CrashlyticsEnabledActivity(),
+    MyAlertDialogFragment.DialogListener {
 
     private val viewModel: MainViewModel by lazy {
         ViewModelProviders.of(this)[MainViewModel::class.java]
@@ -60,10 +60,6 @@ class MainActivity :
                 )
                 fragment.show(supportFragmentManager, MyAlertDialogFragment.getTag(requestCode))
             }
-
-            R.id.nav_setting -> Unit
-
-            R.id.nav_search -> Unit
         }
 
         binding.drawerLayout.closeDrawer(GravityCompat.START)

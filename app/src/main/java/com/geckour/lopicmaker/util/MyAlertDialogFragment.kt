@@ -70,7 +70,7 @@ class MyAlertDialogFragment : AppCompatDialogFragment() {
                 }
     }
 
-    interface IListener {
+    interface DialogListener {
         fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: RequestCode, resultCode: Int, result: Any? = null)
     }
 
@@ -78,12 +78,12 @@ class MyAlertDialogFragment : AppCompatDialogFragment() {
 
     private var sizeBinding: DialogDefineSizeBinding? = null
     private var problemBinding: DialogDefineTitleAndTagsBinding? = null
-    private var listener: IListener? = null
+    private var listener: DialogListener? = null
 
-    override fun onAttach(context: Context?) {
+    override fun onAttach(context: Context) {
         super.onAttach(context)
 
-        listener = targetFragment as? IListener ?: activity as? IListener
+        listener = targetFragment as? DialogListener ?: activity as? DialogListener
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -117,7 +117,7 @@ class MyAlertDialogFragment : AppCompatDialogFragment() {
                     problemBinding?.apply {
                         builder.setView(root)
                         getOptional()?.let {
-                            App.Companion.gson.fromJson(it, ProblemMetadata::class.java).apply {
+                            App.gson.fromJson(it, ProblemMetadata::class.java).apply {
                                 editTextTitle.setText(this.title)
                                 editTextTags.setText(this.tags.joinToString(" "))
                             }

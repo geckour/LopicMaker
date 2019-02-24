@@ -15,12 +15,11 @@ import com.geckour.lopicmaker.databinding.FragmentEditorBinding
 import com.geckour.lopicmaker.ui.main.MainViewModel
 import com.geckour.lopicmaker.util.Algorithm
 import com.geckour.lopicmaker.util.MyAlertDialogFragment
-import com.geckour.lopicmaker.util.fromJson
 import com.geckour.lopicmaker.util.observe
 import timber.log.Timber
 import java.sql.Timestamp
 
-class EditorFragment : Fragment(), MyAlertDialogFragment.IListener {
+class EditorFragment : Fragment(), MyAlertDialogFragment.DialogListener {
 
     companion object {
         private const val KEY_CANVAS_SIZE = "keyCanvasSize"
@@ -123,11 +122,11 @@ class EditorFragment : Fragment(), MyAlertDialogFragment.IListener {
         mainViewModel.fabLeftVisible.postValue(false)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
 
-        menu?.clear()
-        inflater?.inflate(R.menu.editor, menu)
+        menu.clear()
+        inflater.inflate(R.menu.editor, menu)
 
         this.menu = menu
 
@@ -235,7 +234,7 @@ class EditorFragment : Fragment(), MyAlertDialogFragment.IListener {
                     if (this.isNotEmpty()) {
                         val metadata: MyAlertDialogFragment.ProblemMetadata? =
                             try {
-                                App.gson.fromJson(this)
+                                App.gson.fromJson(this, MyAlertDialogFragment.ProblemMetadata::class.java)
                             } catch (e: Exception) {
                                 Timber.e(e)
                                 null

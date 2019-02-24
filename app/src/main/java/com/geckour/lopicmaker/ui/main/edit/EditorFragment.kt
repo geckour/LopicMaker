@@ -9,7 +9,6 @@ import android.util.Size
 import android.view.*
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
-import com.geckour.lopicmaker.App
 import com.geckour.lopicmaker.R
 import com.geckour.lopicmaker.databinding.FragmentEditorBinding
 import com.geckour.lopicmaker.ui.main.MainViewModel
@@ -17,7 +16,6 @@ import com.geckour.lopicmaker.util.Algorithm
 import com.geckour.lopicmaker.util.MyAlertDialogFragment
 import com.geckour.lopicmaker.util.observe
 import timber.log.Timber
-import java.sql.Timestamp
 
 class EditorFragment : Fragment(), MyAlertDialogFragment.DialogListener {
 
@@ -232,24 +230,7 @@ class EditorFragment : Fragment(), MyAlertDialogFragment.DialogListener {
             MyAlertDialogFragment.RequestCode.CONFIRM_BEFORE_SAVE -> {
                 (result as? String)?.apply {
                     if (this.isNotEmpty()) {
-                        val metadata: MyAlertDialogFragment.ProblemMetadata? =
-                            try {
-                                App.gson.fromJson(this, MyAlertDialogFragment.ProblemMetadata::class.java)
-                            } catch (e: Exception) {
-                                Timber.e(e)
-                                null
-                            }
-                        viewModel.problem.value?.also { problem ->
-                            problem.draft =
-                                viewModel.satisfactionState.value !=
-                                        Algorithm.SatisfactionState.Satisfiable
-                            problem.editedAt = Timestamp(System.currentTimeMillis())
-                            metadata?.let {
-                                problem.title = it.title
-                                problem.tags = it.tags
-                            }
-                            viewModel.overwriteProblem(requireContext(), problem)
-                        }
+                        viewModel.overwriteProblem(requireContext(), this)
                     }
                 } ?: viewModel.snackbarStringResId.postValue(R.string.editor_fragment_error_invalid_title)
             }

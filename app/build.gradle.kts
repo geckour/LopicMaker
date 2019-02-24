@@ -16,7 +16,7 @@ android {
         minSdkVersion(Deps.GradlePlugin.minSdkVersion)
         targetSdkVersion(Deps.GradlePlugin.targetSdkVersion)
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
         testInstrumentationRunner = Deps.Test.instrumentTestRunner
 
         dataBinding.isEnabled = true

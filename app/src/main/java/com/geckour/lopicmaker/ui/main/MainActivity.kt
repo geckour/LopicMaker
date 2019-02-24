@@ -60,10 +60,6 @@ class MainActivity :
                 )
                 fragment.show(supportFragmentManager, MyAlertDialogFragment.getTag(requestCode))
             }
-
-            R.id.nav_setting -> Unit
-
-            R.id.nav_search -> Unit
         }
 
         binding.drawerLayout.closeDrawer(GravityCompat.START)

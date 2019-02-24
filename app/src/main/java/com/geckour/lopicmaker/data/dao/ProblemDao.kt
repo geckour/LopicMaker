@@ -24,6 +24,6 @@ interface ProblemDao {
 
 suspend fun Problem.upsert(db: DB): Long =
     db.problemDao().get(id)?.let {
-        db.problemDao().update(it.copy(id = it.id))
-        it.id
+        val result = db.problemDao().update(this.copy(id = it.id))
+        if (result > 0) it.id else -1
     } ?: db.problemDao().insert(this)

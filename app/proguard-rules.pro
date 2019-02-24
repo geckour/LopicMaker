@@ -15,3 +15,16 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+# okio
+-dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+
+
+# Gson
+-keep class com.google.gson.examples.android.model.** { *; }
+
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
+
+-keepnames enum com.geckour.lopicmaker.data.model.** { *; }

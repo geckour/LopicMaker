@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_bar_title_main">作成済みの問題</string>
+    <string name="action_bar_title_draft">下書き</string>
+    <string name="action_bar_title_edit">編集</string>
+    <string name="action_bar_title_edit_with_title">編集 - %1$s</string>
+    <string name="action_bar_title_solve">求解</string>
+    <string name="action_bar_title_solve_with_title">求解 - %1$s</string>
+
+    <string name="navigation_drawer_open">ドロワーを開く</string>
+    <string name="navigation_drawer_close">ドロワーを閉じる</string>
+
+    <string name="action_settings">設定</string>
+    <string name="action_save">保存</string>
+    <string name="action_undo">取り消し</string>
+
+    <string name="nav_main">編集</string>
+    <string name="nav_problem">作成済みの問題</string>
+    <string name="nav_draft">下書き</string>
+    <string name="nav_editor">新規作成</string>
+
+    <string name="hint_query_title">タイトルを入力…</string>
+    <string name="hint_query_genre">タグを入力…</string>
+
+    <string name="dialog_alert_width_size_define">横:</string>
+    <string name="dialog_alert_height_size_define">縦:</string>
+    <string name="dialog_alert_hint_size_define">1 ~ 128</string>
+    <string name="dialog_alert_title_title_define">タイトル:</string>
+    <string name="dialog_alert_title_tags_define">タグ:</string>
+    <string name="dialog_alert_button_confirm">決定</string>
+    <string name="dialog_alert_button_cancel">キャンセル</string>
+    <string name="dialog_alert_button_overwrite">上書き</string>
+    <string name="dialog_alert_button_create_new">新規問題として保存</string>
+    <string name="dialog_alert_title_size_define">キャンバスのサイズ</string>
+    <string name="dialog_alert_title_save_problem">保存</string>
+    <string name="dialog_alert_title_save_draft_problem">下書きを保存</string>
+    <string name="dialog_alert_title_overwrite">上書き保存</string>
+    <string name="dialog_alert_message_save_problem">問題を保存しますか？</string>
+    <string name="dialog_alert_message_save_draft_problem_exist_multiple_solution">
+        この問題のヒントキーからは複数の解が導かれます。下書きとして保存しますか？
+    </string>
+    <string name="dialog_alert_message_save_draft_problem_unsatisfiable">この問題は解くことができません。下書きとして保存しますか？</string>
+    <string name="dialog_alert_message_confirm_before_save">上書き保存しますか？\n新しい問題 / 下書きとして保存しますか？</string>
+
+    <string name="problem_fragment_message_empty">まだ問題が作成されていません。\n右下の+ボタンから作成してください</string>
+    <string name="problem_fragment_message_empty_draft">まだ下書きが作成されていません。\n右下の+ボタンから作成してください</string>
+    <string name="problem_fragment_error_invalid_size">有効なサイズを指定してください</string>
+    <string name="problem_fragment_item_point">%1$d x %2$d</string>
+    <string name="problem_fragment_error_failure_delete">削除に失敗しました</string>
+    <string name="problem_fragment_message_complete_delete">削除しました</string>
+    <string name="problem_fragment_message_undo">取り消しました</string>
+    <string name="problem_fragment_text_tag_prefix">タグ: %1$s</string>
+
+    <string name="editor_fragment_message_complete_save">保存しました</string>
+    <string name="editor_fragment_error_failure_save">保存に失敗しました</string>
+    <string name="editor_fragment_error_invalid_title">有効なタイトルを指定してください</string>
+
+    <string name="solve_fragment_message_solved">求解成功</string>
+
+    <string name="popup_item_title_solve">この問題を解く</string>
+    <string name="popup_item_title_edit">この問題を編集</string>
+    <string name="popup_item_title_delete">この問題を削除</string>
+
+    <string name="accessibility_desc_drawer_open">ドロワーを開く</string>
+    <string name="accessibility_desc_drawer_close">ドロワーを閉じる</string>
+</resources>

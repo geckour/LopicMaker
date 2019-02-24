@@ -20,6 +20,7 @@ import com.geckour.lopicmaker.util.SingleLiveEvent
 import com.geckour.lopicmaker.util.fromJson
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.sql.Timestamp
 import java.util.concurrent.TimeoutException
 
 class EditorViewModel : ViewModel() {
@@ -87,15 +88,37 @@ class EditorViewModel : ViewModel() {
         }
     }
 
-    internal fun overwriteProblem(context: Context, problem: Problem) {
-        try {
-            viewModelScope.launch {
-                problem.upsert(DB.getInstance(context))
-                snackbarStringResId.postValue(R.string.editor_fragment_message_complete_save)
+    internal fun overwriteProblem(context: Context, data: String) {
+        problem.value?.apply {
+            try {
+                viewModelScope.launch {
+                    val metadata: MyAlertDialogFragment.ProblemMetadata? =
+                        try {
+                            App.gson.fromJson(data)
+                        } catch (e: Exception) {
+                            Timber.e(e)
+                            null
+                        }
+                    this@apply.draft =
+                        satisfactionState.value !=
+                                Algorithm.SatisfactionState.Satisfiable
+                    this@apply.editedAt = Timestamp(System.currentTimeMillis())
+                    this@apply.thumb = nonNullAlgorithm.getThumbnailImage()
+                    metadata?.let {
+                        this@apply.title = it.title
+                        this@apply.tags = it.tags
+                    }
+                    problem.postValue(this@apply)
+                    val result = this@apply.upsert(DB.getInstance(context))
+                    snackbarStringResId.postValue(
+                        if (result > -1) R.string.editor_fragment_message_complete_save
+                        else R.string.editor_fragment_error_failure_save
+                    )
+                }
+            } catch (t: Throwable) {
+                Timber.e(t)
+                snackbarStringResId.postValue(R.string.editor_fragment_error_failure_save)
             }
-        } catch (t: Throwable) {
-            Timber.e(t)
-            snackbarStringResId.postValue(R.string.editor_fragment_error_failure_save)
         }
     }
 

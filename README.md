@@ -1,9 +1,10 @@
 # Lopic Maker
-お絵かきロジックの作成を補助するAndroidアプリ
+An Android app for support creation of the Nonogram
 
-## 概要
-- ピクロスをドット絵を描く感覚で制作
-- 描画すると自動的にヒント数字が生成される
-- バックグラウンドで、生成されたヒント数字に基づいて解けるかどうかを判定
-- 解ける場合は保存可能
-- 保存した問題をサムネイル付きのリストで表示
+## Overview
+- Make Nonogram in a way to draw a dot picture
+- Automatically create hint numbers
+- Judge the problem can be solved or not in background
+- Can save the problem if it can be solved
+- Can save the problem as draft if it cannot be solved
+- Show saved problems with thumbnails

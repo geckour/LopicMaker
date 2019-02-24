@@ -69,11 +69,11 @@ class DraftProblemsFragment : Fragment() {
         mainViewModel.fabLeftVisible.postValue(false)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
 
-        menu?.clear()
-        inflater?.inflate(R.menu.main, menu)
+        menu.clear()
+        inflater.inflate(R.menu.main, menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

@@ -15,6 +15,6 @@ fun getTagsText(view: View, tags: List<String>) {
 }
 
 @BindingAdapter("app:srcBitmap")
-fun loadImage(imageView: ImageView, bitmap: Bitmap) {
+fun loadImage(imageView: ImageView, bitmap: Bitmap?) {
     imageView.setImageBitmap(bitmap)
 }

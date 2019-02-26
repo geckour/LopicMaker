@@ -7,8 +7,14 @@ import com.geckour.lopicmaker.Constant.GRID_UNIT
 import com.geckour.lopicmaker.data.model.Problem
 
 open class CanvasUtil(val size: Point) {
-    val cells: MutableList<Problem.Cell> = mutableListOf()
-    val prevCells: MutableList<Problem.Cell> = mutableListOf()
+    private val history: MutableList<MutableList<Problem.Cell>> =
+        mutableListOf(mutableListOf(), mutableListOf())
+    private var currentIndex = 0
+    private val newerIndex get() = (currentIndex - 1).let { if (it < 0) 0 else it }
+    private val olderIndex get() = (currentIndex + 1).let { if (it > history.lastIndex) history.lastIndex else it }
+    val undoAvailable get() = currentIndex < history.lastIndex && history[olderIndex].isNotEmpty()
+    val redoAvailable get() = currentIndex > 0 && history[newerIndex].isNotEmpty()
+    val currentCells get() = history.getOrElse(currentIndex) { mutableListOf() }
     private val sizeBlankArea = Point(0, 0)
 
     init {
@@ -18,7 +24,7 @@ open class CanvasUtil(val size: Point) {
     }
 
     private fun initCells() {
-        initCells(this.cells)
+        initCells(currentCells)
     }
 
     private fun initCells(cells: MutableList<Problem.Cell>) {
@@ -33,11 +39,27 @@ open class CanvasUtil(val size: Point) {
         }
     }
 
-    fun setCells(cells: List<Problem.Cell>): Bitmap? {
-        this.cells.clear()
-        this.cells.addAll(cells)
+    fun setCells(cells: List<Problem.Cell> = currentCells): Bitmap? {
+        (history.lastIndex downTo currentIndex + 1).forEach {
+            history[it] = history[it - 1].map { it.copy() }.toMutableList()
+        }
+        currentIndex = newerIndex
+        history[currentIndex] = cells.map { it.copy() }.toMutableList()
+
+        return getNewBitmap()
+    }
+
+    fun undo() {
+        currentIndex = olderIndex
+    }
+
+    fun redo() {
+        currentIndex = newerIndex
+    }
+
+    fun getNewBitmap(): Bitmap? {
         var bitmap = createCanvasImage()
-        this.cells
+        currentCells
             .filter { it.state == Problem.Cell.State.Fill }
             .forEach { bitmap = onEditCanvasImage(bitmap, it, true) }
 
@@ -48,7 +70,7 @@ open class CanvasUtil(val size: Point) {
 
     private fun clearExceptKeys(image: Bitmap?): Bitmap? {
         var bitmap: Bitmap? = image
-        cells.forEach {
+        currentCells.forEach {
             it.state = Problem.Cell.State.Blank
             bitmap = onEditCanvasImage(bitmap, it, false)
         }
@@ -220,7 +242,7 @@ open class CanvasUtil(val size: Point) {
             )
             var bitmap = createCanvasImage() ?: return image
 
-            this.cells
+            currentCells
                 .filter { it.state == Problem.Cell.State.Fill }
                 .forEach { bitmap = onEditCanvasImage(bitmap, it, true) ?: return null }
 
@@ -327,7 +349,7 @@ open class CanvasUtil(val size: Point) {
     }
 
     fun getCellByCoordinate(coordinate: Point): Problem.Cell? =
-        cells.firstOrNull { it?.coordinate?.equals(coordinate.x, coordinate.y) == true }
+        currentCells.firstOrNull { it.coordinate.equals(coordinate.x, coordinate.y) }
 
     fun getCellIndexByCoordinate(coordinate: Point): Int =
         if (coordinate.x in 0 until size.x && coordinate.y in 0 until size.y) coordinate.x + coordinate.y * size.x + 1 else -1
@@ -355,7 +377,7 @@ open class CanvasUtil(val size: Point) {
     }
 
     fun getThumbnailImage(cells: List<Problem.Cell>? = null): Bitmap {
-        val cs = cells ?: this.cells
+        val cs = cells ?: currentCells
         val u = 5f
         val image = Bitmap.createBitmap(size.x * u.toInt(), size.y * u.toInt(), Bitmap.Config.ARGB_8888)
         val canvas = Canvas(image)

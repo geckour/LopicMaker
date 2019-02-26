@@ -14,6 +14,7 @@ import com.geckour.lopicmaker.data.DB
 import com.geckour.lopicmaker.data.dao.upsert
 import com.geckour.lopicmaker.data.model.Problem
 import com.geckour.lopicmaker.databinding.FragmentEditorBinding
+import com.geckour.lopicmaker.ui.main.MainViewModel
 import com.geckour.lopicmaker.util.Algorithm
 import com.geckour.lopicmaker.util.MyAlertDialogFragment
 import com.geckour.lopicmaker.util.SingleLiveEvent
@@ -40,6 +41,8 @@ class EditorViewModel : ViewModel() {
     private var prevAction: Int = MotionEvent.ACTION_CANCEL
 
     internal val fabLeftVisible = SingleLiveEvent<Boolean>()
+    internal val fabLeftMode = SingleLiveEvent<MainViewModel.FabLeftMode>()
+    internal val toolbarTitleResId = SingleLiveEvent<Pair<@androidx.annotation.StringRes Int, List<String>>>()
 
     internal fun initCanvas(
         context: Context,
@@ -60,19 +63,14 @@ class EditorViewModel : ViewModel() {
 
     private fun initCanvas(binding: FragmentEditorBinding, problem: Problem) {
         val bitmap = problem.let {
-            nonNullAlgorithm.prevCells.apply {
-                clear()
-                addAll(it.cells)
-            }
-
             nonNullAlgorithm.setCells(it.cells)
         }
-        binding.canvas.setImageBitmap(bitmap)
+        binding.canvasImage = bitmap
     }
 
     private fun initCanvas(binding: FragmentEditorBinding, size: Point) {
         algorithm = Algorithm(size)
-        binding.canvas.setImageBitmap(nonNullAlgorithm.createCanvasImage())
+        binding.canvasImage = nonNullAlgorithm.createCanvasImage()
     }
 
     internal fun saveProblem(context: Context, data: String, draft: Boolean) {
@@ -159,7 +157,7 @@ class EditorViewModel : ViewModel() {
             keysInRow,
             keysInColumn,
             thumb,
-            cells = nonNullAlgorithm.cells
+            cells = nonNullAlgorithm.currentCells
         )
     }
 
@@ -214,10 +212,7 @@ class EditorViewModel : ViewModel() {
                     MotionEvent.ACTION_UP,
                     MotionEvent.ACTION_POINTER_UP,
                     MotionEvent.ACTION_CANCEL -> {
-                        nonNullAlgorithm.prevCells.apply {
-                            clear()
-                            addAll(nonNullAlgorithm.cells.map { it.copy() })
-                        }
+                        nonNullAlgorithm.setCells()
                     }
                 }
 
@@ -253,11 +248,10 @@ class EditorViewModel : ViewModel() {
 
                     val bitmap =
                         nonNullAlgorithm.onEditCanvasImage(
-                            (binding.canvas.drawable
-                                    as BitmapDrawable).bitmap, cell,
+                            binding.canvasImage, cell,
                             true
                         )
-                    binding.canvas.setImageBitmap(bitmap)
+                    binding.canvasImage = bitmap
                 }
                 pointPrev0.set(pointCurrent)
             }
@@ -354,14 +348,28 @@ class EditorViewModel : ViewModel() {
     }
 
     private fun showUndoButtonIfAvailable() {
-        if (algorithm?.prevCells?.isNotEmpty() == true)
+        if (algorithm?.undoAvailable == true) {
+            fabLeftMode.postValue(MainViewModel.FabLeftMode.UNDO)
             fabLeftVisible.postValue(true)
+        }
+    }
+
+    private fun showRedoButtonIfAvailable() {
+        if (algorithm?.redoAvailable == true) {
+            fabLeftMode.postValue(MainViewModel.FabLeftMode.REDO)
+            fabLeftVisible.postValue(true)
+        }
     }
 
     internal fun onUndoClicked(binding: FragmentEditorBinding) {
-        val bitmap = nonNullAlgorithm.setCells(nonNullAlgorithm.prevCells)
-        nonNullAlgorithm.prevCells.clear()
-        binding.canvas.setImageBitmap(bitmap)
-        fabLeftVisible.postValue(false)
+        nonNullAlgorithm.undo()
+        binding.canvasImage = nonNullAlgorithm.getNewBitmap()
+        showRedoButtonIfAvailable()
+    }
+
+    internal fun onRedoClicked(binding: FragmentEditorBinding) {
+        nonNullAlgorithm.redo()
+        binding.canvasImage = nonNullAlgorithm.getNewBitmap()
+        showUndoButtonIfAvailable()
     }
 }

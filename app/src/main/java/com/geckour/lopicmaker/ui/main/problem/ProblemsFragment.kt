@@ -48,6 +48,8 @@ class ProblemsFragment : Fragment() {
 
         mainViewModel.fabRightMode.postValue(MainViewModel.FabRightMode.ADD)
 
+        binding.textIndicateEmpty.setText(R.string.problem_fragment_message_empty)
+
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = viewModel.adapter

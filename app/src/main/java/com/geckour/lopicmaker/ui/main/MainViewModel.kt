@@ -18,6 +18,7 @@ class MainViewModel : ViewModel() {
 
     enum class FabLeftMode {
         UNDO,
+        REDO,
         FILL,
         MARK_NOT_FILL
     }
@@ -26,7 +27,7 @@ class MainViewModel : ViewModel() {
     internal val fabRightVisible = SingleLiveEvent<Boolean>()
     internal val fabLeftMode = SingleLiveEvent<FabLeftMode>()
     internal val fabLeftVisible = SingleLiveEvent<Boolean>()
-    internal val fabLeftClicked = SingleLiveEvent<Unit>()
+    internal val fabLeftClicked = SingleLiveEvent<FabLeftMode>()
 
     internal val toolbarTitleResId = SingleLiveEvent<Pair<@androidx.annotation.StringRes Int, List<String>>>()
 

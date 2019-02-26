@@ -169,7 +169,13 @@ class EditorFragment : Fragment(), MyAlertDialogFragment.DialogListener {
 
     private fun observeEvents() {
         mainViewModel.fabLeftClicked.observe(this) {
-            viewModel.onUndoClicked(binding)
+            when (it) {
+                MainViewModel.FabLeftMode.UNDO ->
+                    viewModel.onUndoClicked(binding)
+                MainViewModel.FabLeftMode.REDO ->
+                    viewModel.onRedoClicked(binding)
+                else -> Unit
+            }
         }
 
         viewModel.problem.observe(this) {
@@ -199,8 +205,16 @@ class EditorFragment : Fragment(), MyAlertDialogFragment.DialogListener {
             mainViewModel.fabLeftVisible.postValue(it)
         }
 
+        viewModel.fabLeftMode.observe(this) {
+            mainViewModel.fabLeftMode.postValue(it)
+        }
+
         viewModel.snackbarStringResId.observe(this) {
             mainViewModel.snackBarStringResId.postValue(it)
+        }
+
+        viewModel.toolbarTitleResId.observe(this) {
+            mainViewModel.toolbarTitleResId.postValue(it)
         }
     }
 

@@ -32,7 +32,6 @@ class SolveViewModel : ViewModel() {
 
     internal val pointPrev0 = PointF(-1f, -1f)
     internal val pointPrev1 = PointF(-1f, -1f)
-    private var prevAction: Int = MotionEvent.ACTION_CANCEL
 
     internal fun initCanvas(
         context: Context,
@@ -101,7 +100,7 @@ class SolveViewModel : ViewModel() {
                 pointPrev0.set(-1f, -1f)
                 pointPrev1.set(-1f, -1f)
 
-                if (nonNullAlgorithm4Ref.checkCellsWithSolution(nonNullAlgorithm.cells)) {
+                if (nonNullAlgorithm4Ref.checkCellsWithSolution(nonNullAlgorithm.currentCells)) {
                     viewModelScope.launch {
                         problem.value?.apply {
                             if (this.thumb == null) {
@@ -119,17 +118,6 @@ class SolveViewModel : ViewModel() {
             MotionEvent.ACTION_DOWN,
             MotionEvent.ACTION_POINTER_DOWN,
             MotionEvent.ACTION_MOVE -> {
-                when (prevAction) {
-                    MotionEvent.ACTION_UP,
-                    MotionEvent.ACTION_POINTER_UP,
-                    MotionEvent.ACTION_CANCEL -> {
-                        nonNullAlgorithm.prevCells.apply {
-                            clear()
-                            addAll(nonNullAlgorithm.cells.map { it.copy() })
-                        }
-                    }
-                }
-
                 val pointCurrent = PointF(event.x, event.y)
                 val coordCurrent = nonNullAlgorithm.getCoordinateFromTouchPoint(
                     binding.canvas,
@@ -175,7 +163,6 @@ class SolveViewModel : ViewModel() {
                 pointPrev0.set(pointCurrent)
             }
         }
-        prevAction = event.action
 
         return true
     }

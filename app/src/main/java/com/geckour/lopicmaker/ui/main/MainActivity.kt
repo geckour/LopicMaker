@@ -191,6 +191,7 @@ class MainActivity :
                 setImageResource(
                     when (mode) {
                         MainViewModel.FabLeftMode.UNDO -> R.drawable.ic_undo
+                        MainViewModel.FabLeftMode.REDO -> R.drawable.ic_redo
                         MainViewModel.FabLeftMode.FILL -> R.drawable.ic_fill
                         MainViewModel.FabLeftMode.MARK_NOT_FILL -> R.drawable.ic_close
                     }
@@ -198,7 +199,10 @@ class MainActivity :
                 setOnClickListener {
                     when (mode) {
                         MainViewModel.FabLeftMode.UNDO -> {
-                            viewModel.fabLeftClicked.call()
+                            viewModel.fabLeftClicked.postValue(mode)
+                        }
+                        MainViewModel.FabLeftMode.REDO -> {
+                            viewModel.fabLeftClicked.postValue(mode)
                         }
                         MainViewModel.FabLeftMode.FILL -> {
                             viewModel.fabLeftMode.postValue(MainViewModel.FabLeftMode.MARK_NOT_FILL)
@@ -231,10 +235,10 @@ class MainActivity :
 
             val fragment = SolveFragment.newInstance(it)
             if (fragment != null) {
-                supportFragmentManager?.beginTransaction()
-                    ?.replace(R.id.container, fragment)
-                    ?.addToBackStack(null)
-                    ?.commit()
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.container, fragment)
+                    .addToBackStack(null)
+                    .commit()
             }
         }
 
@@ -243,10 +247,10 @@ class MainActivity :
 
             val fragment = EditorFragment.newInstance(it, false)
             if (fragment != null) {
-                supportFragmentManager?.beginTransaction()
-                    ?.replace(R.id.container, fragment)
-                    ?.addToBackStack(null)
-                    ?.commit()
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.container, fragment)
+                    .addToBackStack(null)
+                    .commit()
             }
         }
 
@@ -255,10 +259,10 @@ class MainActivity :
 
             val fragment = EditorFragment.newInstance(it, true)
             if (fragment != null) {
-                supportFragmentManager?.beginTransaction()
-                    ?.replace(R.id.container, fragment)
-                    ?.addToBackStack(null)
-                    ?.commit()
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.container, fragment)
+                    .addToBackStack(null)
+                    .commit()
             }
         }
     }

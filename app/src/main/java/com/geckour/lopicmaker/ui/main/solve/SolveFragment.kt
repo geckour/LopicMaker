@@ -58,6 +58,10 @@ class SolveFragment : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
+        viewModel.problem.value?.title?.let {
+            mainViewModel.toolbarTitleResId.postValue(R.string.action_bar_title_solve_with_title to listOf(it))
+        }
+
         binding.canvas.setOnTouchListener { _, event ->
             viewModel.onTouchCanvas(requireContext(), binding, event, mainViewModel.fabLeftMode.value)
         }

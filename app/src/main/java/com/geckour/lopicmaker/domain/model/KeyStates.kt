@@ -1,7 +1,5 @@
 package com.geckour.lopicmaker.domain.model
 
-import kotlin.collections.ArrayList
-
 data class KeyStates(val lineSize: Int, val keys: List<Int>) {
     companion object {
         var varCount = 0
@@ -13,9 +11,9 @@ data class KeyStates(val lineSize: Int, val keys: List<Int>) {
 
     init {
         cnfVars = (0 until (this.slideMargin + 1) * this.keys.size)
-                .mapTo(ArrayList()) {
-                    ++varCount
-                }
+            .mapTo(mutableListOf()) {
+                ++varCount
+            }
     }
 
     fun getCnfVar(keyIndex: Int, slideIndex: Int): Int? {

@@ -6,7 +6,13 @@ import android.graphics.Point
 import android.graphics.PointF
 import android.os.Bundle
 import android.util.Size
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.geckour.lopicmaker.R

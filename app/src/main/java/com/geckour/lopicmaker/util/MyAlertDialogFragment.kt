@@ -4,12 +4,12 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
-import androidx.databinding.DataBindingUtil
 import android.os.Bundle
-import androidx.fragment.app.Fragment
-import androidx.appcompat.app.AppCompatDialogFragment
 import android.util.Size
 import android.view.LayoutInflater
+import androidx.appcompat.app.AppCompatDialogFragment
+import androidx.databinding.DataBindingUtil
+import androidx.fragment.app.Fragment
 import com.geckour.lopicmaker.App
 import com.geckour.lopicmaker.R
 import com.geckour.lopicmaker.databinding.DialogDefineSizeBinding
@@ -37,41 +37,48 @@ class MyAlertDialogFragment : AppCompatDialogFragment() {
         private const val ARGS_CANCELABLE = "cancelable"
 
         fun newInstance(
-                title: String = "",
-                message: String = "",
-                optional: String? = null,
-                requestCode: RequestCode? = null,
-                resId: Int? = null,
-                cancelable: Boolean = true,
-                targetFragment: Fragment? = null
+            title: String = "",
+            message: String = "",
+            optional: String? = null,
+            requestCode: RequestCode? = null,
+            resId: Int? = null,
+            cancelable: Boolean = true,
+            targetFragment: Fragment? = null
         ): MyAlertDialogFragment =
-                MyAlertDialogFragment().apply {
-                    arguments = Bundle().apply {
-                        putString(ARGS_TITLE, title)
-                        putString(ARGS_MESSAGE, message)
-                        optional?.let { putString(ARGS_OPTIONAL, it) }
-                        requestCode?.let { putSerializable(ARGS_REQUEST_CODE, it) }
-                        putInt(ARGS_RES_ID, resId ?: -1)
-                        putBoolean(ARGS_CANCELABLE, cancelable)
-                    }
-                    if (targetFragment != null) setTargetFragment(targetFragment, requestCode?.ordinal
-                            ?: 0)
+            MyAlertDialogFragment().apply {
+                arguments = Bundle().apply {
+                    putString(ARGS_TITLE, title)
+                    putString(ARGS_MESSAGE, message)
+                    optional?.let { putString(ARGS_OPTIONAL, it) }
+                    requestCode?.let { putSerializable(ARGS_REQUEST_CODE, it) }
+                    putInt(ARGS_RES_ID, resId ?: -1)
+                    putBoolean(ARGS_CANCELABLE, cancelable)
                 }
+                if (targetFragment != null) setTargetFragment(
+                    targetFragment, requestCode?.ordinal
+                        ?: 0
+                )
+            }
 
         fun getTag(requestCode: RequestCode): String =
-                when (requestCode) {
-                    RequestCode.DEFINE_SIZE -> "myAlertDialogFragmentDefineSize"
-                    RequestCode.SAVE_DRAFT_PROBLEM -> "myAlertDialogFragmentSaveDraftProblem"
-                    RequestCode.SAVE_PROBLEM -> "myAlertDialogFragmentSaveProblem"
-                    RequestCode.CONFIRM_BEFORE_SAVE -> "myAlertDialogFragmentConfirmBeforeSave"
-                    RequestCode.RENAME_TITLE -> "myAlertDialogFragmentRenameTitle"
-                    RequestCode.IMPORT_PROBLEM -> "myAlertDialogFragmentImportProblem"
-                    else -> "myAlertDialogFragment"
-                }
+            when (requestCode) {
+                RequestCode.DEFINE_SIZE -> "myAlertDialogFragmentDefineSize"
+                RequestCode.SAVE_DRAFT_PROBLEM -> "myAlertDialogFragmentSaveDraftProblem"
+                RequestCode.SAVE_PROBLEM -> "myAlertDialogFragmentSaveProblem"
+                RequestCode.CONFIRM_BEFORE_SAVE -> "myAlertDialogFragmentConfirmBeforeSave"
+                RequestCode.RENAME_TITLE -> "myAlertDialogFragmentRenameTitle"
+                RequestCode.IMPORT_PROBLEM -> "myAlertDialogFragmentImportProblem"
+                else -> "myAlertDialogFragment"
+            }
     }
 
     interface DialogListener {
-        fun onResultAlertDialog(dialogInterface: DialogInterface, requestCode: RequestCode, resultCode: Int, result: Any? = null)
+        fun onResultAlertDialog(
+            dialogInterface: DialogInterface,
+            requestCode: RequestCode,
+            resultCode: Int,
+            result: Any? = null
+        )
     }
 
     data class ProblemMetadata(val title: String, val tags: List<String>)
@@ -94,26 +101,32 @@ class MyAlertDialogFragment : AppCompatDialogFragment() {
                 setTitle(arguments?.getString(ARGS_TITLE))
                 setMessage(arguments?.getString(ARGS_MESSAGE))
                 setNegativeButton(
-                        R.string.dialog_alert_button_cancel
+                    R.string.dialog_alert_button_cancel
                 ) { dialog, _ -> dialog.dismiss() }
                 if (requestCode == RequestCode.CONFIRM_BEFORE_SAVE) {
                     setNeutralButton(
-                            R.string.dialog_alert_button_create_new
+                        R.string.dialog_alert_button_create_new
                     ) { dialog, which -> fireListener(dialog, which) }
                 }
                 setPositiveButton(
-                        if (requestCode == RequestCode.CONFIRM_BEFORE_SAVE) R.string.dialog_alert_button_overwrite else R.string.dialog_alert_button_confirm
+                    if (requestCode == RequestCode.CONFIRM_BEFORE_SAVE) R.string.dialog_alert_button_overwrite else R.string.dialog_alert_button_confirm
                 ) { dialog, which -> fireListener(dialog, which) }
             }
 
             when (arguments?.getInt(ARGS_RES_ID, -1)) {
                 R.layout.dialog_define_size -> {
-                    sizeBinding = DataBindingUtil.inflate(LayoutInflater.from(activity), R.layout.dialog_define_size, null, false)
+                    sizeBinding =
+                        DataBindingUtil.inflate(LayoutInflater.from(activity), R.layout.dialog_define_size, null, false)
                     sizeBinding?.apply { builder.setView(root) }
                 }
 
                 R.layout.dialog_define_title_and_tags -> {
-                    problemBinding = DataBindingUtil.inflate(LayoutInflater.from(activity), R.layout.dialog_define_title_and_tags, null, false)
+                    problemBinding = DataBindingUtil.inflate(
+                        LayoutInflater.from(activity),
+                        R.layout.dialog_define_title_and_tags,
+                        null,
+                        false
+                    )
                     problemBinding?.apply {
                         builder.setView(root)
                         getOptional()?.let {
@@ -135,25 +148,25 @@ class MyAlertDialogFragment : AppCompatDialogFragment() {
     private fun fireListener(dialogInterface: DialogInterface, which: Int) {
         val requestCode = getRequestCode()
         listener?.onResultAlertDialog(
-                dialogInterface,
-                requestCode,
-                which,
-                when (requestCode) {
-                    RequestCode.DEFINE_SIZE -> {
-                        getSize()
-                    }
-                    RequestCode.SAVE_PROBLEM, RequestCode.SAVE_DRAFT_PROBLEM -> {
-                        App.gson.toJson(getProblemMetadata())
-                    }
-                    else -> getOptional()
+            dialogInterface,
+            requestCode,
+            which,
+            when (requestCode) {
+                RequestCode.DEFINE_SIZE -> {
+                    getSize()
                 }
+                RequestCode.SAVE_PROBLEM, RequestCode.SAVE_DRAFT_PROBLEM -> {
+                    App.gson.toJson(getProblemMetadata())
+                }
+                else -> getOptional()
+            }
         )
     }
 
     private fun getRequestCode(): RequestCode =
-            if (arguments?.containsKey(ARGS_REQUEST_CODE) == true)
-                arguments?.getSerializable(ARGS_REQUEST_CODE) as RequestCode
-            else RequestCode.UNKNOWN
+        if (arguments?.containsKey(ARGS_REQUEST_CODE) == true)
+            arguments?.getSerializable(ARGS_REQUEST_CODE) as RequestCode
+        else RequestCode.UNKNOWN
 
     private fun getSize(): Size {
         var width: Int
@@ -171,7 +184,13 @@ class MyAlertDialogFragment : AppCompatDialogFragment() {
     }
 
     private fun getProblemMetadata(): ProblemMetadata? =
-            problemBinding?.let { ProblemMetadata(it.editTextTitle.text.toString(), it.editTextTags.text.toString().getTagsList()) }
+        problemBinding?.let {
+            ProblemMetadata(
+                it.editTextTitle.text.toString(),
+                it.editTextTags.text.toString().getTagsList()
+            )
+        }
 
-    private fun getOptional(): String? = if (arguments?.containsKey(ARGS_OPTIONAL) == true) arguments?.getString(ARGS_OPTIONAL) else null
+    private fun getOptional(): String? =
+        if (arguments?.containsKey(ARGS_OPTIONAL) == true) arguments?.getString(ARGS_OPTIONAL) else null
 }

@@ -15,8 +15,8 @@ android {
         applicationId = "com.geckour.lopicmaker"
         minSdkVersion(Deps.GradlePlugin.minSdkVersion)
         targetSdkVersion(Deps.GradlePlugin.targetSdkVersion)
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.0.2"
         testInstrumentationRunner = Deps.Test.instrumentTestRunner
 
         dataBinding.isEnabled = true

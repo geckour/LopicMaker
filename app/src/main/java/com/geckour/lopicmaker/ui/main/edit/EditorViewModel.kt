@@ -3,7 +3,6 @@ package com.geckour.lopicmaker.ui.main.edit
 import android.content.Context
 import android.graphics.Point
 import android.graphics.PointF
-import android.graphics.drawable.BitmapDrawable
 import android.view.MotionEvent
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
@@ -19,10 +18,10 @@ import com.geckour.lopicmaker.util.Algorithm
 import com.geckour.lopicmaker.util.MyAlertDialogFragment
 import com.geckour.lopicmaker.util.SingleLiveEvent
 import com.geckour.lopicmaker.util.fromJson
+import com.geckour.lopicmaker.util.solutionCount
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.sql.Timestamp
-import java.util.concurrent.TimeoutException
 
 class EditorViewModel : ViewModel() {
 
@@ -331,15 +330,8 @@ class EditorViewModel : ViewModel() {
     internal fun refreshSatisfactionState() {
         viewModelScope.launch {
             val state = algorithm?.getSolutionCounter()?.let {
-                val count = try {
-                    it.countSolutions()
-                } catch (e: TimeoutException) {
-                    it.lowerBound()
-                } finally {
-                    -1
-                }
-                nonNullAlgorithm.getSatisfactionState(count)
-            } ?: let {
+                nonNullAlgorithm.getSatisfactionState(it.solutionCount)
+            } ?: run {
                 Timber.d("solutionCounter is null")
                 Algorithm.SatisfactionState.Unsatisfiable
             }

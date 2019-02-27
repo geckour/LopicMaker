@@ -28,3 +28,9 @@
 -keep class * implements com.google.gson.JsonDeserializer
 
 -keepnames enum com.geckour.lopicmaker.data.model.** { *; }
+
+
+# Crashlytics
+-keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends java.lang.Exception

@@ -7,7 +7,7 @@ import org.sat4j.specs.ISolver
 import org.sat4j.specs.TimeoutException
 import org.sat4j.tools.SolverDecorator
 
-class UniqueSolutionCounter(solver: ISolver, val size: Point): SolverDecorator<ISolver>(solver) {
+class UniqueSolutionCounter(solver: ISolver, val size: Point) : SolverDecorator<ISolver>(solver) {
     private var lowerBound: Long = 0
     private val length: Int = size.x * size.y
 
